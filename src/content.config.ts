@@ -142,16 +142,22 @@ const partners = defineCollection({
   }),
 });
 
-const site = defineCollection({
-  loader: collection('site'),
+const pages = defineCollection({
+  loader: collection('pages'),
   schema: z.object({
-    title: z.string(),
-    mission: z.string(),
-    overview: z.string(),
-    contactEmail: z.email(),
-    contactInstitution: z.string(),
-    capabilities: z.array(z.object({ title: z.string(), description: z.string() })),
-    opportunities: z.array(z.object({ title: z.string(), description: z.string() })),
+    title: z.string().min(1),
+    description: z.string().min(1),
+    eyebrow: z.string().optional(),
+    heroTitle: z.string().optional(),
+    heroText: z.string().optional(),
+    primaryCta: z.object({
+      label: z.string(),
+      href: z.string(),
+    }).optional(),
+    secondaryCta: z.object({
+      label: z.string(),
+      href: z.string(),
+    }).optional(),
   }),
 });
 
@@ -166,5 +172,5 @@ export const collections = {
   resources,
   people,
   partners,
-  site,
+  pages,
 };
