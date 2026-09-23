@@ -3,23 +3,22 @@ import { getCollection } from 'astro:content';
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import PageIntro from '../../components/PageIntro.astro';
 import DemoNotice from '../../components/DemoNotice.astro';
-
 const resources = await getCollection('resources', ({ data }) => data.status === 'published');
+const categories = [
+  { id: 'dataset', title: 'Datasets', description: 'Documented observation and derived-data records ready for responsible reuse.' },
+  { id: 'software', title: 'Software', description: 'Open workflows and tools for preparing, analysing, and sharing acoustic evidence.' },
+  { id: 'tutorial', title: 'Tutorials', description: 'Practical learning materials for field methods, analysis, and data stewardship.' },
+];
 ---
-
-<BaseLayout title="Resources" description="Open methods, datasets, software, and teaching resources from OBLP.">
-  <PageIntro eyebrow="Open resources" title="Methods designed to travel" description="Protocols, software, datasets, and learning materials can be described consistently here as verified project resources become available." />
-  <section class="listing shell">
-    <DemoNotice />
-    <div class="filter-summary"><span>Resource catalogue</span><span>{resources.length} published demonstration entry</span></div>
-    <div class="record-list">
-      {resources.length ? resources.map((resource) => (
-        <article class="record">
-          <p class="record-meta">{resource.data.resourceType}</p>
-          <div><h2>{resource.data.title}</h2><p>{resource.data.summary}</p></div>
-          <span>{resource.data.url || resource.data.file ? 'Available' : 'No file attached'}</span>
-        </article>
-      )) : <p class="empty-state">No published resources are available yet.</p>}
-    </div>
+<BaseLayout title="Resources" description="Browse OBLP datasets, software, and tutorials.">
+  <PageIntro eyebrow="Open resources" title="Knowledge designed to travel" description="Find reusable datasets, software, and tutorials with licensing, citation, and access conditions kept visible." />
+  <section class="listing shell"><DemoNotice />
+    <nav class="category-nav" aria-label="Resource categories">{categories.map((category) => <a href={`#${category.id}`}>{category.title}<span>{resources.filter((item) => item.data.resourceType === category.id).length}</span></a>)}</nav>
+    {categories.map((category) => {
+      const items = resources.filter((item) => item.data.resourceType === category.id);
+      return <section class="resource-section" id={category.id}><div class="resource-heading"><p class="eyebrow">{category.title}</p><h2>{category.description}</h2></div><div class="resource-grid">
+        {items.length ? items.map((resource) => <article class="resource-card"><p class="card-type">{resource.data.resourceType}</p><h3>{resource.data.title}</h3><p>{resource.data.summary}</p><dl><div><dt>License</dt><dd>{resource.data.license ?? 'Not specified'}</dd></div><div><dt>Access</dt><dd>{resource.data.accessConditions ?? 'Contact the project for access details.'}</dd></div>{resource.data.citation && <div><dt>Cite as</dt><dd>{resource.data.citation}</dd></div>}</dl>{resource.data.url ? <a class="arrow-link" href={resource.data.url}>Open external resource <span aria-hidden="true">↗</span></a> : resource.data.file ? <a class="arrow-link" href={resource.data.file}>Download resource <span aria-hidden="true">↓</span></a> : <span class="availability">Catalogue record only</span>}</article>) : <p class="empty-state">No published {category.title.toLowerCase()} are available yet.</p>}
+      </div></section>;
+    })}
   </section>
 </BaseLayout>

@@ -3,32 +3,32 @@ import { getCollection } from 'astro:content';
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import PageIntro from '../../components/PageIntro.astro';
 import DemoNotice from '../../components/DemoNotice.astro';
+import { stationUrl, surveyUrl } from '../../utils/urls';
 
-const findings = await getCollection('findings', ({ data }) => data.status === 'published');
-const publications = await getCollection('publications', ({ data }) => data.status === 'published');
+const publications = (await getCollection('publications', ({ data }) => data.status === 'published')).sort((a, b) => b.data.year - a.data.year);
 const themes = [
-  ['01', 'Observe ecological activity', 'Use passive acoustic observations to characterize biological and environmental variability across time.'],
-  ['02', 'Connect complementary evidence', 'Relate sound to habitat context and other ecological observations while keeping evidence provenance visible.'],
-  ['03', 'Develop reproducible methods', 'Create validated workflows that can be compared, reused, and improved across research settings.'],
-  ['04', 'Translate knowledge', 'Make research evidence and uncertainty legible for collaboration, monitoring, and conservation conversations.'],
+  ['01', 'Observe', 'Build long-running and campaign-scale views of ecological activity through passive acoustic monitoring.'],
+  ['02', 'Connect', 'Relate sound to habitats, environmental conditions, and complementary observations.'],
+  ['03', 'Discover', 'Develop reproducible approaches for finding and comparing meaningful patterns.'],
 ];
 ---
-
-<BaseLayout title="Research" description="Research themes, findings, and publications represented in the OBLP website architecture.">
-  <PageIntro eyebrow="Research" title="Sound as ecological evidence" description="OBLP connects acoustic observation, ecological interpretation, and open methods to investigate biodiversity and ecosystem change." />
-  <section class="section shell">
-    <div class="research-grid">
-      {themes.map(([number, title, text]) => <article><span>{number}</span><h2>{title}</h2><p>{text}</p></article>)}
+<BaseLayout title="Research" description="Discover OBLP research themes and publication records.">
+  <PageIntro eyebrow="Research and discovery" title="Evidence that remains connected" description="Explore how listening becomes ecological evidence, and find publications linked back to the stations and surveys that inform them." />
+  <section class="section shell"><div class="research-grid research-grid-three">{themes.map(([number, title, text]) => <article><span>{number}</span><h2>{title}</h2><p>{text}</p></article>)}</div></section>
+  <section class="section section-tint"><div class="shell">
+    <div class="section-heading split-heading"><div><p class="eyebrow">Publication directory</p><h2>Methods, evidence, and discovery.</h2></div><p>Bibliographic records are managed in the publication content collection and connected to their observation context by stable IDs.</p></div>
+    <DemoNotice />
+    <div class="publication-list">
+      {publications.map((publication) => <article class="publication-card">
+        <div class="publication-year">{publication.data.year}</div>
+        <div><p class="card-type">{publication.data.journal ?? publication.data.venue ?? 'Publication'}</p><h2>{publication.data.title}</h2><p class="authors">{publication.data.authors.join(', ')}</p><p>{publication.data.summary}</p>
+          <div class="publication-links">
+            {publication.data.doi && <a class="button compact" href={publication.data.doi}>View DOI <span class="visually-hidden">for {publication.data.title}</span></a>}
+            {publication.data.relatedStations.map((station) => <a href={stationUrl(station.id)}>Station: {station.id}</a>)}
+            {publication.data.relatedSurveys.map((survey) => <a href={surveyUrl(survey.id)}>Survey: {survey.id}</a>)}
+          </div>
+        </div>
+      </article>)}
     </div>
-  </section>
-  <section class="section section-tint">
-    <div class="shell">
-      <DemoNotice />
-      <div class="section-heading"><p class="eyebrow">Evidence records</p><h2>Findings and publications</h2></div>
-      <div class="record-list">
-        {findings.map((finding) => <article class="record"><p class="record-meta">Finding</p><div><h2>{finding.data.title}</h2><p>{finding.data.summary}</p></div></article>)}
-        {publications.map((publication) => <article class="record"><p class="record-meta">Publication · {publication.data.year}</p><div><h2>{publication.data.title}</h2><p>{publication.data.authors.join(', ')}{publication.data.venue ? ` · ${publication.data.venue}` : ''}</p></div></article>)}
-      </div>
-    </div>
-  </section>
+  </div></section>
 </BaseLayout>

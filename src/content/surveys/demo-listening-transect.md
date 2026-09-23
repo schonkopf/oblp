@@ -9,6 +9,13 @@ stations:
   - demo-campaign-station
 surveyType: spatial
 period: "Demonstration period"
+ecosystem: "Pelagic margin"
+observationTypes: [acoustic, environmental]
+polygon:
+  - [-67, 38]
+  - [-44, 38]
+  - [-42, 49]
+  - [-64, 50]
 methods:
   - "Spatially replicated recordings"
   - "Standardized contextual observations"

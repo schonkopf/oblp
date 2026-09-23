@@ -6,6 +6,11 @@ demo: true
 region: demo-pelagic-margin
 stationType: long-term
 habitat: "Illustrative coastal habitat"
+ecosystem: "Coastal shelf"
+observationTypes: [acoustic, environmental]
+coordinates:
+  latitude: 44.25
+  longitude: -63.4
 monitoringPeriod: "Demonstration period"
 methods:
   - "Autonomous passive acoustic monitoring"

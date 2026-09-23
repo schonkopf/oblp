@@ -4,32 +4,80 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
 import PageIntro from '../../components/PageIntro.astro';
 import DemoNotice from '../../components/DemoNotice.astro';
 import ArrowLink from '../../components/ArrowLink.astro';
-import { stationUrl, surveyUrl } from '../../utils/urls';
+import { stationUrl, surveyUrl, withBase } from '../../utils/urls';
 
 const stations = await getCollection('stations', ({ data }) => data.status === 'published');
 const surveys = await getCollection('surveys', ({ data }) => data.status === 'published');
+const regions = new Map((await getCollection('regions')).map((region) => [region.id, region.data.title]));
+const records = [
+  ...stations.map((entry) => ({ id: entry.id, title: entry.data.title, summary: entry.data.summary, kind: 'station', subtype: entry.data.stationType, observations: entry.data.observationTypes, ecosystem: entry.data.ecosystem ?? entry.data.habitat ?? 'Not specified', region: regions.get(entry.data.region.id) ?? 'Not specified', url: stationUrl(entry.id), geometry: entry.data.coordinates ? { type: 'Point', coordinates: [entry.data.coordinates.longitude, entry.data.coordinates.latitude] } : null })),
+  ...surveys.map((entry) => ({ id: entry.id, title: entry.data.title, summary: entry.data.summary, kind: 'survey', subtype: entry.data.surveyType, observations: entry.data.observationTypes, ecosystem: entry.data.ecosystem ?? 'Not specified', region: regions.get(entry.data.region.id) ?? 'Not specified', url: surveyUrl(entry.id), geometry: entry.data.polygon ? { type: 'Polygon', coordinates: [[...entry.data.polygon, entry.data.polygon[0]]] } : null })),
+];
+const ecosystems = [...new Set(records.map((item) => item.ecosystem))];
+const regionNames = [...new Set(records.map((item) => item.region))];
 ---
-
-<BaseLayout title="Explore" description="Explore published stations and surveys in the OBLP data architecture.">
-  <PageIntro eyebrow="Observation index" title="Explore places and field activities" description="Move between long-term stations, campaign observations, and surveys through a transparent set of linked records." />
-  <section class="listing shell">
+<BaseLayout title="Explore" description="Search and map OBLP monitoring stations and surveys.">
+  <Fragment slot="head"><link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" /></Fragment>
+  <PageIntro eyebrow="Explore the network" title="Find an observation window" description="Search monitoring stations and mapping surveys by observation type, ecosystem, or region—then move directly into each detailed record." />
+  <section class="listing shell explorer" data-explorer>
     <DemoNotice />
-    <div class="filter-summary"><span>Published demonstration entries</span><span>{stations.length} stations · {surveys.length} surveys</span></div>
-    <div class="record-list">
-      {stations.map((station) => (
-        <article class="record">
-          <p class="record-meta">{station.data.stationType} station</p>
-          <div><h2>{station.data.title}</h2><p>{station.data.summary}</p></div>
-          <ArrowLink href={stationUrl(station.id)} label="Open" />
-        </article>
-      ))}
-      {surveys.map((survey) => (
-        <article class="record">
-          <p class="record-meta">{survey.data.surveyType} survey</p>
-          <div><h2>{survey.data.title}</h2><p>{survey.data.summary}</p></div>
-          <ArrowLink href={surveyUrl(survey.id)} label="Open" />
-        </article>
-      ))}
+    <div class="explore-controls" aria-label="Filter observation records">
+      <label class="search-field"><span>Search locations</span><input type="search" name="query" placeholder="Search by title, place, or method" /></label>
+      <label><span>Observation</span><select name="observation"><option value="">All types</option><option value="acoustic">Acoustic</option><option value="visual">Visual</option><option value="environmental">Environmental</option><option value="multimodal">Multimodal</option></select></label>
+      <label><span>Ecosystem</span><select name="ecosystem"><option value="">All ecosystems</option>{ecosystems.map((value) => <option value={value}>{value}</option>)}</select></label>
+      <label><span>Region</span><select name="region"><option value="">All regions</option>{regionNames.map((value) => <option value={value}>{value}</option>)}</select></label>
+      <button class="reset-button" type="button">Reset</button>
+    </div>
+    <p class="results-status" aria-live="polite">Showing {records.length} records</p>
+    <div class="directory-layout">
+      <div id="network-map" class="map" aria-label="Map of monitoring stations and survey areas"></div>
+      <div class="location-list">
+        {records.map((record) => <article class="location-card" data-record={JSON.stringify(record)}>
+          <div class="location-meta"><span>{record.kind === 'station' ? '●' : '▰'} {record.kind}</span><span>{record.region}</span></div>
+          <h2>{record.title}</h2><p>{record.summary}</p>
+          <ul class="mini-tags">{record.observations.map((value) => <li>{value}</li>)}<li>{record.ecosystem}</li></ul>
+          <ArrowLink href={record.url} label={`View ${record.kind}`} />
+        </article>)}
+        <p class="empty-state no-results" hidden>No records match these filters. Try broadening your search.</p>
+      </div>
     </div>
   </section>
+  <script is:inline define:vars={{ records, base: withBase() }}>
+    const explorer = document.querySelector('[data-explorer]');
+    const cards = [...explorer.querySelectorAll('[data-record]')];
+    const status = explorer.querySelector('.results-status');
+    const noResults = explorer.querySelector('.no-results');
+    let map;
+    let layerGroup;
+    const escapeHtml = (value) => String(value).replace(/[&<>'"]/g, (char) => ({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[char]));
+    function initMap() {
+      if (!window.L) return;
+      map = L.map('network-map', { scrollWheelZoom: false }).setView([43, -54], 3);
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 18, attribution: '&copy; OpenStreetMap contributors' }).addTo(map);
+      layerGroup = L.featureGroup().addTo(map);
+      update();
+    }
+    function update() {
+      const query = explorer.querySelector('[name=query]').value.trim().toLowerCase();
+      const observation = explorer.querySelector('[name=observation]').value;
+      const ecosystem = explorer.querySelector('[name=ecosystem]').value;
+      const region = explorer.querySelector('[name=region]').value;
+      const visible = records.filter((item) => (!query || `${item.title} ${item.summary} ${item.region} ${item.ecosystem}`.toLowerCase().includes(query)) && (!observation || item.observations.includes(observation)) && (!ecosystem || item.ecosystem === ecosystem) && (!region || item.region === region));
+      cards.forEach((card) => { card.hidden = !visible.some((item) => item.id === JSON.parse(card.dataset.record).id); });
+      status.textContent = `Showing ${visible.length} of ${records.length} records`;
+      noResults.hidden = visible.length !== 0;
+      if (!map) return;
+      layerGroup.clearLayers();
+      visible.forEach((item) => {
+        if (!item.geometry) return;
+        const feature = { type: 'Feature', properties: item, geometry: item.geometry };
+        const layer = L.geoJSON(feature, { pointToLayer: (_, latlng) => L.circleMarker(latlng, { radius: 9, color: '#fff', weight: 2, fillColor: '#f1a55b', fillOpacity: 1 }), style: { color: '#5cd1c9', weight: 2, fillColor: '#168b87', fillOpacity: .25 } });
+        layer.bindPopup(`<strong>${escapeHtml(item.title)}</strong><br><span>${escapeHtml(item.kind)} · ${escapeHtml(item.region)}</span><br><a href="${escapeHtml(item.url)}">View details</a>`).addTo(layerGroup);
+      });
+      if (layerGroup.getLayers().length) map.fitBounds(layerGroup.getBounds(), { padding: [30, 30], maxZoom: 6 });
+    }
+    explorer.addEventListener('input', update);
+    explorer.querySelector('.reset-button').addEventListener('click', () => { explorer.querySelectorAll('input, select').forEach((input) => input.value = ''); update(); });
+    const leaflet = document.createElement('script'); leaflet.src = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js'; leaflet.crossOrigin = 'anonymous'; leaflet.onload = initMap; document.head.append(leaflet);
+  </script>
 </BaseLayout>
