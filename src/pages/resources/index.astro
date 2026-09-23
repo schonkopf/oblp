@@ -1,0 +1,25 @@
+---
+import { getCollection } from 'astro:content';
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import PageIntro from '../../components/PageIntro.astro';
+import DemoNotice from '../../components/DemoNotice.astro';
+
+const resources = await getCollection('resources', ({ data }) => data.status === 'published');
+---
+
+<BaseLayout title="Resources" description="Open methods, datasets, software, and teaching resources from OBLP.">
+  <PageIntro eyebrow="Open resources" title="Methods designed to travel" description="Protocols, software, datasets, and learning materials can be described consistently here as verified project resources become available." />
+  <section class="listing shell">
+    <DemoNotice />
+    <div class="filter-summary"><span>Resource catalogue</span><span>{resources.length} published demonstration entry</span></div>
+    <div class="record-list">
+      {resources.length ? resources.map((resource) => (
+        <article class="record">
+          <p class="record-meta">{resource.data.resourceType}</p>
+          <div><h2>{resource.data.title}</h2><p>{resource.data.summary}</p></div>
+          <span>{resource.data.url || resource.data.file ? 'Available' : 'No file attached'}</span>
+        </article>
+      )) : <p class="empty-state">No published resources are available yet.</p>}
+    </div>
+  </section>
+</BaseLayout>

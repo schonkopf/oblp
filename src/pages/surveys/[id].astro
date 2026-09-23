@@ -1,0 +1,43 @@
+---
+import { getCollection, getEntry, render, type CollectionEntry } from 'astro:content';
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import DemoNotice from '../../components/DemoNotice.astro';
+import ArrowLink from '../../components/ArrowLink.astro';
+import { stationUrl, withBase } from '../../utils/urls';
+
+export async function getStaticPaths() {
+  const entries = await getCollection('surveys', ({ data }) => data.status === 'published');
+  return entries.map((entry) => ({ params: { id: entry.id }, props: { entry } }));
+}
+
+interface Props { entry: CollectionEntry<'surveys'>; }
+const { entry } = Astro.props;
+const { Content } = await render(entry);
+const region = await getEntry(entry.data.region);
+const stations = (await Promise.all(entry.data.stations.map((station) => getEntry(station)))).filter((station) => station?.data.status === 'published');
+---
+
+<BaseLayout title={entry.data.title} description={entry.data.summary}>
+  <header class="detail-hero"><div class="shell"><p class="eyebrow">{entry.data.surveyType} survey</p><h1>{entry.data.title}</h1><p class="lede">{entry.data.summary}</p></div></header>
+  <div class="detail-grid shell">
+    <article class="detail-content">
+      {entry.data.demo && <DemoNotice />}
+      <div class="prose"><Content /></div>
+      <h2>Survey methods</h2>
+      {entry.data.methods.length ? <ul class="tag-list">{entry.data.methods.map((method) => <li>{method}</li>)}</ul> : <p class="empty-state">Methods have not been provided.</p>}
+      <h2>Stations in this survey</h2>
+      {stations.length ? <div class="record-list">{stations.map((station) => station && <article class="record"><p class="record-meta">{station.data.stationType} station</p><div><h2>{station.data.title}</h2><p>{station.data.summary}</p></div><ArrowLink href={stationUrl(station.id)} label="Open" /></article>)}</div> : <p class="empty-state">No published stations are connected to this survey.</p>}
+      <p><ArrowLink href={withBase('explore/')} label="Back to explore" /></p>
+    </article>
+    <aside class="metadata" aria-label="Survey metadata">
+      <p class="eyebrow">Survey metadata</p>
+      <dl>
+        <div><dt>Stable ID</dt><dd>{entry.id}</dd></div>
+        <div><dt>Region</dt><dd>{region?.data.title ?? 'Not provided'}</dd></div>
+        <div><dt>Period</dt><dd>{entry.data.period ?? 'Not provided'}</dd></div>
+        <div><dt>Survey type</dt><dd>{entry.data.surveyType}</dd></div>
+        <div><dt>Published stations</dt><dd>{stations.length}</dd></div>
+      </dl>
+    </aside>
+  </div>
+</BaseLayout>

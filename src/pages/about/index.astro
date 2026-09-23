@@ -1,0 +1,29 @@
+---
+import { getCollection } from 'astro:content';
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import PageIntro from '../../components/PageIntro.astro';
+import DemoNotice from '../../components/DemoNotice.astro';
+
+const people = await getCollection('people', ({ data }) => data.status === 'published');
+const partners = await getCollection('partners', ({ data }) => data.status === 'published');
+---
+
+<BaseLayout title="About" description="About the purpose and structure of the Ocean Biodiversity Listening Project.">
+  <PageIntro eyebrow="About OBLP" title="A shared practice of listening" description="The website is structured to communicate research, provide reusable resources, and create clear pathways for scientific collaboration." />
+  <section class="section shell">
+    <div class="split-heading">
+      <div><p class="eyebrow">Project purpose</p><h2>Observe, understand, and connect</h2></div>
+      <div><p>OBLP brings acoustic observations into a wider ecological context. This foundation deliberately separates verified content from presentation, making future updates easier to review and maintain.</p><p>Specific project history, membership, collaborators, and funding acknowledgements should be added only from confirmed sources.</p></div>
+    </div>
+  </section>
+  <section class="section section-tint">
+    <div class="shell">
+      <DemoNotice />
+      <div class="section-heading"><p class="eyebrow">Directory structure</p><h2>People and partners</h2></div>
+      <div class="card-grid">
+        {people.map((person) => <article class="data-card"><p class="card-type">Person</p><h3>{person.data.name}</h3><p>{person.data.role}</p><p>{person.data.affiliation ?? 'Affiliation not provided'}</p></article>)}
+        {partners.map((partner) => <article class="data-card"><p class="card-type">{partner.data.partnerType} partner</p><h3>{partner.data.name}</h3><p>{partner.data.summary}</p></article>)}
+      </div>
+    </div>
+  </section>
+</BaseLayout>

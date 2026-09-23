@@ -1,0 +1,63 @@
+---
+import { getCollection } from 'astro:content';
+import BaseLayout from '../layouts/BaseLayout.astro';
+import ArrowLink from '../components/ArrowLink.astro';
+import DemoNotice from '../components/DemoNotice.astro';
+import { stationUrl, surveyUrl, withBase } from '../utils/urls';
+
+const stations = (await getCollection('stations', ({ data }) => data.status === 'published')).slice(0, 2);
+const surveys = (await getCollection('surveys', ({ data }) => data.status === 'published')).slice(0, 1);
+---
+
+<BaseLayout title="Home" description="The Ocean Biodiversity Listening Project uses sound to investigate aquatic biodiversity and ecosystem change.">
+  <section class="hero shell">
+    <div class="hero-copy">
+      <p class="eyebrow">Ocean Biodiversity Listening Project</p>
+      <h1>Listening reveals a living ocean.</h1>
+      <p class="lede">OBLP develops open, reproducible approaches for observing aquatic biodiversity and ecosystem change through sound.</p>
+      <div class="button-row">
+        <a class="button primary" href={withBase('explore/')}>Explore observations</a>
+        <a class="button secondary" href={withBase('research/')}>Our research</a>
+      </div>
+    </div>
+    <div class="signal-field" aria-hidden="true">
+      <div class="signal-label"><span>Acoustic window</span><span>00:42:18</span></div>
+      <svg viewBox="0 0 720 300" role="img">
+        <defs><linearGradient id="ocean" x1="0" x2="1"><stop stop-color="#0d5870"/><stop offset="1" stop-color="#20a39a"/></linearGradient></defs>
+        <path d="M0 160 C35 160 35 154 70 154 S105 167 140 167 175 118 210 118 245 177 280 177 315 146 350 146 385 158 420 158 455 84 490 84 525 170 560 170 595 128 630 128 665 152 720 152" fill="none" stroke="url(#ocean)" stroke-width="3"/>
+        <path d="M0 185 C30 185 40 181 72 181 S110 192 145 192 175 174 210 174 240 190 275 190 310 179 345 179 380 188 415 188 450 161 485 161 520 190 555 190 590 177 625 177 670 185 720 185" fill="none" stroke="#8fc9ca" stroke-width="1.5"/>
+        {Array.from({ length: 9 }).map((_, i) => <line x1="0" x2="720" y1={32 + i * 27} y2={32 + i * 27} stroke="#dbe8ea" stroke-width="1" />)}
+      </svg>
+      <div class="signal-axis"><span>Low frequency</span><span>High frequency</span></div>
+    </div>
+  </section>
+
+  <section class="section shell">
+    <DemoNotice />
+    <div class="section-heading split-heading">
+      <div><p class="eyebrow">A connected observatory</p><h2>From recordings to ecological understanding</h2></div>
+      <p>Structured observations connect places, surveys, recordings, visual evidence, findings, and open resources without hiding uncertainty or missing data.</p>
+    </div>
+    <div class="process-grid">
+      <article><span>01</span><h3>Listen</h3><p>Collect comparable acoustic observations across environments and timescales.</p></article>
+      <article><span>02</span><h3>Interpret</h3><p>Link acoustic patterns with ecological context and complementary observations.</p></article>
+      <article><span>03</span><h3>Share</h3><p>Turn methods and evidence into accessible resources for research and collaboration.</p></article>
+    </div>
+  </section>
+
+  <section class="section section-tint">
+    <div class="shell">
+      <div class="section-heading"><p class="eyebrow">Explore the demo collection</p><h2>Observations at multiple scales</h2></div>
+      <div class="card-grid">
+        {stations.map((station) => <article class="data-card"><p class="card-type">{station.data.stationType} station</p><h3>{station.data.title}</h3><p>{station.data.summary}</p><ArrowLink href={stationUrl(station.id)} label="View station" /></article>)}
+        {surveys.map((survey) => <article class="data-card feature-card"><p class="card-type">{survey.data.surveyType} survey</p><h3>{survey.data.title}</h3><p>{survey.data.summary}</p><ArrowLink href={surveyUrl(survey.id)} label="View survey" /></article>)}
+      </div>
+    </div>
+  </section>
+
+  <section class="section shell statement">
+    <p class="eyebrow">Why sound?</p>
+    <blockquote>Acoustic observations can extend how we perceive ecological activity—continuously, non-invasively, and across scales.</blockquote>
+    <ArrowLink href={withBase('about/')} label="Learn about OBLP" />
+  </section>
+</BaseLayout>

@@ -1,0 +1,28 @@
+---
+import { withBase } from '../utils/urls';
+
+const currentPath = Astro.url.pathname;
+const links = [
+  { href: 'explore/', label: 'Explore' },
+  { href: 'research/', label: 'Research' },
+  { href: 'resources/', label: 'Resources' },
+  { href: 'about/', label: 'About' },
+];
+---
+
+<header class="site-header">
+  <a class="skip-link" href="#main">Skip to content</a>
+  <div class="shell header-inner">
+    <a class="brand" href={withBase()} aria-label="Ocean Biodiversity Listening Project home">
+      <span class="brand-mark" aria-hidden="true"><span></span><span></span><span></span></span>
+      <span><strong>OBLP</strong><small>Ocean Biodiversity Listening Project</small></span>
+    </a>
+    <nav aria-label="Primary navigation">
+      <ul>
+        {links.map((link) => (
+          <li><a href={withBase(link.href)} aria-current={currentPath.startsWith(withBase(link.href)) ? 'page' : undefined}>{link.label}</a></li>
+        ))}
+      </ul>
+    </nav>
+  </div>
+</header>

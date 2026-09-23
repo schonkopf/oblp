@@ -1,0 +1,34 @@
+---
+import { getCollection } from 'astro:content';
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import PageIntro from '../../components/PageIntro.astro';
+import DemoNotice from '../../components/DemoNotice.astro';
+
+const findings = await getCollection('findings', ({ data }) => data.status === 'published');
+const publications = await getCollection('publications', ({ data }) => data.status === 'published');
+const themes = [
+  ['01', 'Observe ecological activity', 'Use passive acoustic observations to characterize biological and environmental variability across time.'],
+  ['02', 'Connect complementary evidence', 'Relate sound to habitat context and other ecological observations while keeping evidence provenance visible.'],
+  ['03', 'Develop reproducible methods', 'Create validated workflows that can be compared, reused, and improved across research settings.'],
+  ['04', 'Translate knowledge', 'Make research evidence and uncertainty legible for collaboration, monitoring, and conservation conversations.'],
+];
+---
+
+<BaseLayout title="Research" description="Research themes, findings, and publications represented in the OBLP website architecture.">
+  <PageIntro eyebrow="Research" title="Sound as ecological evidence" description="OBLP connects acoustic observation, ecological interpretation, and open methods to investigate biodiversity and ecosystem change." />
+  <section class="section shell">
+    <div class="research-grid">
+      {themes.map(([number, title, text]) => <article><span>{number}</span><h2>{title}</h2><p>{text}</p></article>)}
+    </div>
+  </section>
+  <section class="section section-tint">
+    <div class="shell">
+      <DemoNotice />
+      <div class="section-heading"><p class="eyebrow">Evidence records</p><h2>Findings and publications</h2></div>
+      <div class="record-list">
+        {findings.map((finding) => <article class="record"><p class="record-meta">Finding</p><div><h2>{finding.data.title}</h2><p>{finding.data.summary}</p></div></article>)}
+        {publications.map((publication) => <article class="record"><p class="record-meta">Publication · {publication.data.year}</p><div><h2>{publication.data.title}</h2><p>{publication.data.authors.join(', ')}{publication.data.venue ? ` · ${publication.data.venue}` : ''}</p></div></article>)}
+      </div>
+    </div>
+  </section>
+</BaseLayout>

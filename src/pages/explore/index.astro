@@ -1,0 +1,35 @@
+---
+import { getCollection } from 'astro:content';
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import PageIntro from '../../components/PageIntro.astro';
+import DemoNotice from '../../components/DemoNotice.astro';
+import ArrowLink from '../../components/ArrowLink.astro';
+import { stationUrl, surveyUrl } from '../../utils/urls';
+
+const stations = await getCollection('stations', ({ data }) => data.status === 'published');
+const surveys = await getCollection('surveys', ({ data }) => data.status === 'published');
+---
+
+<BaseLayout title="Explore" description="Explore published stations and surveys in the OBLP data architecture.">
+  <PageIntro eyebrow="Observation index" title="Explore places and field activities" description="Move between long-term stations, campaign observations, and surveys through a transparent set of linked records." />
+  <section class="listing shell">
+    <DemoNotice />
+    <div class="filter-summary"><span>Published demonstration entries</span><span>{stations.length} stations · {surveys.length} surveys</span></div>
+    <div class="record-list">
+      {stations.map((station) => (
+        <article class="record">
+          <p class="record-meta">{station.data.stationType} station</p>
+          <div><h2>{station.data.title}</h2><p>{station.data.summary}</p></div>
+          <ArrowLink href={stationUrl(station.id)} label="Open" />
+        </article>
+      ))}
+      {surveys.map((survey) => (
+        <article class="record">
+          <p class="record-meta">{survey.data.surveyType} survey</p>
+          <div><h2>{survey.data.title}</h2><p>{survey.data.summary}</p></div>
+          <ArrowLink href={surveyUrl(survey.id)} label="Open" />
+        </article>
+      ))}
+    </div>
+  </section>
+</BaseLayout>
