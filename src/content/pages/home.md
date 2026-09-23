@@ -1,51 +1,58 @@
 ---
 title: "Home"
 pageType: home
-description: "The Ocean Biodiversity Listening Project connects acoustic observations across marine ecosystems."
+description: "The Ocean Biodiversity Listening Project uses underwater sound to study marine biodiversity, ecosystem dynamics, and environmental change across space and time."
+
 eyebrow: "Ocean Biodiversity Listening Project"
-heroTitle: "Listening to marine ecosystems across space and time."
-heroText: "OBLP is a collaborative research framework for connecting passive acoustic observations with ecological context, reproducible analysis, and openly described evidence."
+heroTitle: "Listening to the ocean's voice."
+heroText: "OBLP uses underwater sound to explore marine biodiversity and ecosystem change—from coral reefs to the deep sea, and from daily biological rhythms to long-term environmental change."
+
 primaryCta:
-  label: "Explore the network"
+  label: "Explore recording locations"
   href: "/explore/"
 secondaryCta:
-  label: "Discover the research"
+  label: "Discover our research"
   href: "/research/"
+
 whyListen:
   eyebrow: "Why listen"
-  title: "Sound carries evidence of life."
-  text: "Marine soundscapes bring together biological activity, physical processes, and human presence. Listening can complement visual surveys and extend observation through darkness, depth, and changing seasons."
-  supportingText: "OBLP connects those observations without separating them from ecological context, methods, or uncertainty."
-  observationNote: "Beyond daylight, visibility, and season"
+  title: "Sound reveals life beneath the surface."
+  text: "Fishes, snapping shrimps, whales, and many other marine organisms produce sound. By listening to these dynamic soundscapes, we can reveal biological activity and ecosystem processes that conventional visual surveys can easily miss."
+  supportingText: "Tracking soundscapes through day and night, across seasons, and before and after disturbances allows us to investigate how marine ecosystems vary and change across temporal and spatial scales."
+  observationNote: ""
+
 network:
-  eyebrow: "Observation network"
-  title: "One ocean, many listening windows."
-  text: "Stations and surveys create complementary views across place and time. Each location remains connected to its methods, region, and related evidence."
+  eyebrow: "An international observation network"
+  title: "Listening across marine ecosystems."
+  text: "From shallow coral reefs to the deep ocean, we combine long-term monitoring with spatial surveys and different observing platforms to capture soundscape dynamics across habitats, depths, and geographic regions."
   actionLabel: "Explore all observations"
+
 pathway:
   eyebrow: "From sound to ecological knowledge"
-  title: "Evidence is built through a connected process."
-  text: "Acoustic observations become useful when every transformation is documented and interpretation remains linked to its source."
+  title: "Turning recordings into social-ecological indicators."
+  text: "Underwater soundscapes are complex mixtures of biological, environmental, and human sounds. We use signal processing and AI to identify their sources and patterns, then connect acoustic observations with ecological data, environmental conditions, and local knowledge. Together, these approaches turn sound into meaningful indicators of ecosystem change and evidence for conservation and management."
   steps:
-    - title: "Observe"
-      text: "Collect acoustic and contextual observations with documented protocols."
-    - title: "Prepare"
-      text: "Standardize metadata, quality checks, and comparable analysis windows."
-    - title: "Analyse"
-      text: "Identify patterns in sound alongside environmental and biological context."
-    - title: "Interpret"
-      text: "Relate evidence to habitats, seasons, complementary observations, and uncertainty."
+    - title: "Listen"
+      text: "Record underwater sound across habitats, depths, seasons, and environmental conditions."
+    - title: "Detect"
+      text: "Use signal processing and AI to identify biological activity, sound sources, and changes in soundscape patterns."
+    - title: "Connect"
+      text: "Integrate soundscapes with biodiversity, habitat, environmental conditions, and complementary observations such as eDNA and imagery."
+    - title: "Understand"
+      text: "Investigate biological rhythms, human pressures, disturbance, recovery, and transitions in marine ecosystem conditions."
     - title: "Share"
-      text: "Publish methods, data products, and findings with clear provenance."
+      text: "Turn observations into open datasets, analytical tools, and scientific evidence that can be explored and reused."
+
 findings:
-  eyebrow: "Research evidence"
-  title: "Findings remain connected to observation."
-  text: "Research records bring claims, locations, surveys, visualizations, and publications together so evidence can be followed rather than taken out of context."
-  actionLabel: "View research and publications"
+  eyebrow: "Research directions"
+  title: "Connecting biodiversity, environments, and soundscapes."
+  text: "Our research investigates how biodiversity and environmental processes shape underwater soundscapes, how biological rhythms emerge across time and space, and how ecosystems respond acoustically to natural disturbances and human activities. Ultimately, we ask whether listening can help us detect and understand changes in marine ecosystem condition."
+  actionLabel: "Explore research findings"
+
 collaboration:
   eyebrow: "International collaboration"
-  title: "A distributed practice of listening."
-  text: "OBLP is designed for exchange among researchers, monitoring programmes, technical teams, and communities working across ocean regions and disciplines."
+  title: "Building a shared practice of ocean listening."
+  text: "OBLP connects researchers, observation sites, technologies, and ecological knowledge across ocean regions. By sharing observations and analytical approaches while preserving local ecological context, we aim to understand patterns of marine ecosystem change that cannot be revealed by any single site alone."
   action:
     label: "Explore ways to collaborate"
     href: "/about/#collaborate"
