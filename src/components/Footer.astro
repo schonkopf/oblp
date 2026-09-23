@@ -1,24 +1,6 @@
----
-import { withBase } from '../utils/urls';
----
-
 <footer class="site-footer">
-  <div class="shell footer-grid">
-    <div>
-      <a class="footer-brand" href={withBase()}>OBLP</a>
-      <p>Listening to marine ecosystems across space and time.</p>
-    </div>
-    <div>
-      <p class="eyebrow">Navigate</p>
-      <a href={withBase('explore/')}>Explore observations</a>
-      <a href={withBase('research/')}>Research themes</a>
-      <a href={withBase('resources/')}>Open resources</a>
-      <a href={withBase('about/#collaborate')}>Collaborate</a>
-    </div>
-    <div>
-      <p class="eyebrow">Project note</p>
-      <p>This foundation contains demonstration records only. Verified OBLP content can replace them through the content collections.</p>
-    </div>
+  <div class="shell footer-inner">
+    <span>© {new Date().getFullYear()} Ocean Biodiversity Listening Project</span>
+    <a href="#top">Back to top <span aria-hidden="true">↑</span></a>
   </div>
-  <div class="shell footer-meta"><span>© {new Date().getFullYear()} Ocean Biodiversity Listening Project</span><span>Static, accessible, and data-driven.</span></div>
 </footer>
