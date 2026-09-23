@@ -1,20 +1,31 @@
 ---
-import { getCollection, getEntry, render } from 'astro:content';
+import { getCollection, getEntry } from 'astro:content';
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import PageIntro from '../../components/PageIntro.astro';
 import DemoNotice from '../../components/DemoNotice.astro';
+
 const page = await getEntry('pages', 'about');
-if (!page) throw new Error('Missing pages/about content entry.');
-const { Content } = await render(page);
+if (!page || page.data.pageType !== 'about') throw new Error('Missing or invalid pages/about content entry.');
 const people = await getCollection('people', ({ data }) => data.status === 'published');
 const allPartners = await getCollection('partners', ({ data }) => data.status === 'published');
 const partners = allPartners.filter((item) => item.data.partnerType !== 'funder');
 const funders = allPartners.filter((item) => item.data.partnerType === 'funder');
 ---
 <BaseLayout title={page.data.title} description={page.data.description}>
-  <PageIntro eyebrow={page.data.eyebrow ?? page.data.title} title={page.data.heroTitle ?? page.data.title} description={page.data.heroText ?? page.data.description} />
-  <section class="section shell editorial-content about-editorial" id="collaborate"><Content /></section>
-  <section class="section section-tint"><div class="shell"><div class="section-heading"><p class="eyebrow">Research team</p><h2>People behind the listening.</h2></div><DemoNotice /><div class="people-grid">{people.map((person) => <article class="person-card"><div class="portrait-placeholder" aria-hidden="true">{person.data.name.split(' ').map((part) => part[0]).join('')}</div><div><h3>{person.data.name}</h3><p class="role">{person.data.role}</p><p>{person.data.affiliation ?? 'Affiliation not provided'}</p>{person.data.profileUrl && <a href={person.data.profileUrl}>View profile</a>}</div></article>)}</div></div></section>
-  <section class="section section-dark"><div class="shell"><div class="section-heading"><p class="eyebrow">International partners</p><h2>A network shaped by many places.</h2></div><DemoNotice /><div class="partner-list">{partners.map((partner) => <article><p class="card-type">{partner.data.partnerType}</p><h3>{partner.data.name}</h3><p>{partner.data.summary}</p>{partner.data.url && <a href={partner.data.url}>Visit partner ↗</a>}</article>)}</div></div></section>
-  <section class="section section-tint"><div class="shell"><div><p class="eyebrow">Funding & sponsors</p><h2>Support for shared infrastructure.</h2><DemoNotice /><div class="funders">{funders.map((funder) => <article><h3>{funder.data.name}</h3><p>{funder.data.summary}</p></article>)}</div></div></div></section>
+  <PageIntro eyebrow={page.data.eyebrow} title={page.data.heroTitle} description={page.data.heroText} />
+
+  <section class="section shell about-purpose">
+    <div><p class="eyebrow">{page.data.purpose.eyebrow}</p><h2>{page.data.purpose.title}</h2></div>
+    <div><p>{page.data.purpose.text}</p><p>{page.data.purpose.supportingText}</p></div>
+  </section>
+
+  <section class="section section-tint"><div class="shell"><div class="section-heading split-heading"><div><p class="eyebrow">{page.data.capabilitiesIntro.eyebrow}</p><h2>{page.data.capabilitiesIntro.title}</h2></div><p>{page.data.capabilitiesIntro.text}</p></div><ol class="capability-list">{page.data.capabilities.map((item, index) => <li><span>{String(index + 1).padStart(2, '0')}</span><h3>{item.title}</h3><p>{item.text}</p></li>)}</ol></div></section>
+
+  <section class="section shell"><div class="section-heading"><p class="eyebrow">Research team</p><h2>People behind the listening.</h2></div><DemoNotice /><div class="people-grid">{people.map((person) => <article class="person-card"><div class="portrait-placeholder" aria-hidden="true">{person.data.name.split(' ').map((part) => part[0]).join('')}</div><div><h3>{person.data.name}</h3><p class="role">{person.data.role}</p><p>{person.data.affiliation ?? 'Affiliation not provided'}</p>{person.data.profileUrl && <a href={person.data.profileUrl}>View profile</a>}</div></article>)}</div></section>
+
+  <section class="section section-dark"><div class="shell"><div class="section-heading split-heading"><div><p class="eyebrow">International partners</p><h2>A network shaped by many places.</h2></div><p>Organizational records remain distinct from page copy and can be reused wherever the collaboration network is represented.</p></div><DemoNotice /><div class="partner-list">{partners.map((partner) => <article><p class="card-type">{partner.data.partnerType}</p><h3>{partner.data.name}</h3><p>{partner.data.summary}</p>{partner.data.url && <a href={partner.data.url}>Visit partner ↗</a>}</article>)}</div></div></section>
+
+  <section class="section shell" id="collaborate"><div class="section-heading split-heading"><div><p class="eyebrow">{page.data.opportunities.eyebrow}</p><h2>{page.data.opportunities.title}</h2></div><p>{page.data.opportunities.text}</p></div><div class="opportunity-list">{page.data.opportunities.items.map((item, index) => <article><span>{String(index + 1).padStart(2, '0')}</span><h3>{item.title}</h3><p>{item.text}</p></article>)}</div></section>
+
+  <section class="section section-tint"><div class="shell about-bottom"><div><p class="eyebrow">Funding & sponsors</p><h2>Support for shared infrastructure.</h2><DemoNotice /><div class="funders">{funders.map((funder) => <article><h3>{funder.data.name}</h3><p>{funder.data.summary}</p></article>)}</div></div><aside class="contact-panel"><p class="eyebrow">Contact</p><h2>{page.data.contact.title}</h2><p>{page.data.contact.text}</p><a class="button light" href={page.data.contact.action.href}>{page.data.contact.action.label}</a></aside></div></section>
 </BaseLayout>

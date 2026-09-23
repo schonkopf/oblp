@@ -1,0 +1,23 @@
+---
+import type { CollectionEntry } from 'astro:content';
+import ArrowLink from './ArrowLink.astro';
+
+interface Props {
+  finding: CollectionEntry<'findings'>;
+  context: string[];
+  href: string;
+  linkLabel?: string;
+  marker?: string;
+}
+const { finding, context, href, linkLabel = 'Trace the related research', marker = 'F–01' } = Astro.props;
+---
+<article class="finding-summary">
+  <div class="finding-index" aria-hidden="true">{marker}</div>
+  <div>
+    <p class="record-kicker">{finding.data.demo ? 'Demonstration finding' : 'Research finding'}</p>
+    <h3>{finding.data.title}</h3>
+    <p class="finding-statement">{finding.data.summary}</p>
+    {context.length > 0 && <p class="finding-context"><span>Connected observations</span> {context.join(' · ')}</p>}
+    <ArrowLink href={href} label={linkLabel} />
+  </div>
+</article>
