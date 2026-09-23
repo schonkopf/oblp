@@ -49,17 +49,4 @@ collaboration:
   action:
     label: "Explore ways to collaborate"
     href: "/about/#collaborate"
-pathways:
-  eyebrow: "Continue through OBLP"
-  title: "Follow the observations, evidence, and methods."
-  items:
-    - title: "Explore"
-      text: "Move through stations, surveys, regions, and observation types."
-      href: "/explore/"
-    - title: "Research"
-      text: "Trace findings and publications back to their scientific context."
-      href: "/research/"
-    - title: "Resources"
-      text: "Find reusable datasets, protocols, software, and learning material."
-      href: "/resources/"
 ---

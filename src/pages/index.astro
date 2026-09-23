@@ -95,9 +95,4 @@ const findingContext = featuredFinding ? [
       <div><p class="collaboration-copy">{page.data.collaboration.text}</p><div class="partner-register">{partners.map((partner, index) => <p><span>{String(index + 1).padStart(2, '0')}</span>{partner.data.name}<small>{partner.data.partnerType}</small></p>)}</div><a class="button light" href={withBase(page.data.collaboration.action.href)}>{page.data.collaboration.action.label}</a></div>
     </div>
   </section>
-
-  <section class="section shell home-pathways">
-    <div><p class="eyebrow">{page.data.pathways.eyebrow}</p><h2>{page.data.pathways.title}</h2></div>
-    <nav aria-label="Continue through OBLP">{page.data.pathways.items.map((item, index) => <a href={withBase(item.href)}><span>{String(index + 1).padStart(2, '0')}</span><strong>{item.title}</strong><small>{item.text}</small><b aria-hidden="true">↗</b></a>)}</nav>
-  </section>
 </BaseLayout>
