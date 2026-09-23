@@ -4,7 +4,7 @@ pageType: home
 description: "The Ocean Biodiversity Listening Project uses underwater sound to study marine biodiversity, ecosystem dynamics, and environmental change across space and time."
 
 eyebrow: "Ocean Biodiversity Listening Project"
-heroTitle: "Listening to the ocean's voice."
+heroTitle: "Listening to the ocean's voice"
 heroText: "OBLP uses underwater sound to explore marine biodiversity and ecosystem change—from coral reefs to the deep sea, and from daily biological rhythms to long-term environmental change."
 
 primaryCta:
@@ -16,20 +16,20 @@ secondaryCta:
 
 whyListen:
   eyebrow: "Why listen"
-  title: "Sound reveals life beneath the surface."
+  title: "Sound reveals life beneath the surface"
   text: "Fishes, snapping shrimps, whales, and many other marine organisms produce sound. By listening to these dynamic soundscapes, we can reveal biological activity and ecosystem processes that conventional visual surveys can easily miss."
   supportingText: "Tracking soundscapes through day and night, across seasons, and before and after disturbances allows us to investigate how marine ecosystems vary and change across temporal and spatial scales."
-  observationNote: "No"
+  observationNote: "Autonomous recorders · Drifting platforms · Day and night · Seasons and monsoons · Storms and disturbances · Coral reefs to the deep sea"
 
 network:
   eyebrow: "An international observation network"
-  title: "Listening across marine ecosystems."
+  title: "Listening across marine ecosystems"
   text: "From shallow coral reefs to the deep ocean, we combine long-term monitoring with spatial surveys and different observing platforms to capture soundscape dynamics across habitats, depths, and geographic regions."
   actionLabel: "Explore all observations"
 
 pathway:
   eyebrow: "From sound to ecological knowledge"
-  title: "Turning recordings into social-ecological indicators."
+  title: "Turning recordings into social-ecological indicators"
   text: "Underwater soundscapes are complex mixtures of biological, environmental, and human sounds. We use signal processing and AI to identify their sources and patterns, then connect acoustic observations with ecological data, environmental conditions, and local knowledge. Together, these approaches turn sound into meaningful indicators of ecosystem change and evidence for conservation and management."
   steps:
     - title: "Listen"
@@ -45,13 +45,13 @@ pathway:
 
 findings:
   eyebrow: "Research directions"
-  title: "Connecting biodiversity, environments, and soundscapes."
+  title: "Connecting biodiversity, environments, and soundscapes"
   text: "Our research investigates how biodiversity and environmental processes shape underwater soundscapes, how biological rhythms emerge across time and space, and how ecosystems respond acoustically to natural disturbances and human activities. Ultimately, we ask whether listening can help us detect and understand changes in marine ecosystem condition."
   actionLabel: "Explore research findings"
 
 collaboration:
   eyebrow: "International collaboration"
-  title: "Building a shared practice of ocean listening."
+  title: "Building a shared practice of ocean listening"
   text: "OBLP connects researchers, observation sites, technologies, and ecological knowledge across ocean regions. By sharing observations and analytical approaches while preserving local ecological context, we aim to understand patterns of marine ecosystem change that cannot be revealed by any single site alone."
   action:
     label: "Explore ways to collaborate"
