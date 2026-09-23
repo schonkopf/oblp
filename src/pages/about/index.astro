@@ -1,20 +1,20 @@
 ---
-import { getCollection, getEntry } from 'astro:content';
+import { getCollection, getEntry, render } from 'astro:content';
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import PageIntro from '../../components/PageIntro.astro';
 import DemoNotice from '../../components/DemoNotice.astro';
-const site = await getEntry('site', 'overview');
+const page = await getEntry('pages', 'about');
+if (!page) throw new Error('Missing pages/about content entry.');
+const { Content } = await render(page);
 const people = await getCollection('people', ({ data }) => data.status === 'published');
 const allPartners = await getCollection('partners', ({ data }) => data.status === 'published');
 const partners = allPartners.filter((item) => item.data.partnerType !== 'funder');
 const funders = allPartners.filter((item) => item.data.partnerType === 'funder');
 ---
-<BaseLayout title="About & Collaborate" description="Meet the OBLP network and find ways to collaborate.">
-  <PageIntro eyebrow="About & collaborate" title="A shared practice of listening" description={site?.data.mission ?? 'Listening to marine ecosystems across space and time.'} />
-  <section class="section shell"><div class="split-heading top-align"><div><p class="eyebrow">Project overview</p><h2>Built around connection.</h2></div><div class="large-copy"><p>{site?.data.overview}</p><p>Stations, surveys, publications, and resources remain linked so the network can grow without losing the context that makes observations meaningful.</p></div></div></section>
+<BaseLayout title={page.data.title} description={page.data.description}>
+  <PageIntro eyebrow={page.data.eyebrow ?? page.data.title} title={page.data.heroTitle ?? page.data.title} description={page.data.heroText ?? page.data.description} />
+  <section class="section shell editorial-content about-editorial" id="collaborate"><Content /></section>
   <section class="section section-tint"><div class="shell"><div class="section-heading"><p class="eyebrow">Research team</p><h2>People behind the listening.</h2></div><DemoNotice /><div class="people-grid">{people.map((person) => <article class="person-card"><div class="portrait-placeholder" aria-hidden="true">{person.data.name.split(' ').map((part) => part[0]).join('')}</div><div><h3>{person.data.name}</h3><p class="role">{person.data.role}</p><p>{person.data.affiliation ?? 'Affiliation not provided'}</p>{person.data.profileUrl && <a href={person.data.profileUrl}>View profile</a>}</div></article>)}</div></div></section>
-  <section class="section shell"><div class="section-heading split-heading"><div><p class="eyebrow">Research capabilities</p><h2>Work across the observation lifecycle.</h2></div><p>Combine field practice, analysis, and open infrastructure through a distributed network.</p></div><div class="capability-grid">{site?.data.capabilities.map((item, i) => <article><span>0{i + 1}</span><h3>{item.title}</h3><p>{item.description}</p></article>)}</div></section>
   <section class="section section-dark"><div class="shell"><div class="section-heading"><p class="eyebrow">International partners</p><h2>A network shaped by many places.</h2></div><DemoNotice /><div class="partner-list">{partners.map((partner) => <article><p class="card-type">{partner.data.partnerType}</p><h3>{partner.data.name}</h3><p>{partner.data.summary}</p>{partner.data.url && <a href={partner.data.url}>Visit partner ↗</a>}</article>)}</div></div></section>
-  <section class="section shell" id="collaborate"><div class="section-heading split-heading top-align"><div><p class="eyebrow">Collaboration opportunities</p><h2>Bring your perspective to the network.</h2></div><p>OBLP is designed for exchange among researchers, monitoring programmes, technical teams, and communities of practice.</p></div><div class="opportunity-grid">{site?.data.opportunities.map((item) => <article><h3>{item.title}</h3><p>{item.description}</p></article>)}</div></section>
-  <section class="section section-tint"><div class="shell about-bottom"><div><p class="eyebrow">Funding & sponsors</p><h2>Support for shared infrastructure.</h2><DemoNotice /><div class="funders">{funders.map((funder) => <article><h3>{funder.data.name}</h3><p>{funder.data.summary}</p></article>)}</div></div><aside class="contact-card"><p class="eyebrow">Contact</p><h2>Start a conversation.</h2><p>Tell us about the location, observations, expertise, or question you would like to connect.</p><a class="button primary" href={`mailto:${site?.data.contactEmail}`}>Email the project</a><small>{site?.data.contactInstitution}<br />{site?.data.contactEmail}</small></aside></div></section>
+  <section class="section section-tint"><div class="shell"><div><p class="eyebrow">Funding & sponsors</p><h2>Support for shared infrastructure.</h2><DemoNotice /><div class="funders">{funders.map((funder) => <article><h3>{funder.data.name}</h3><p>{funder.data.summary}</p></article>)}</div></div></div></section>
 </BaseLayout>

@@ -1,5 +1,5 @@
 ---
-import { getCollection } from 'astro:content';
+import { getCollection, getEntry, render } from 'astro:content';
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import PageIntro from '../../components/PageIntro.astro';
 import DemoNotice from '../../components/DemoNotice.astro';
@@ -15,10 +15,14 @@ const records = [
 ];
 const ecosystems = [...new Set(records.map((item) => item.ecosystem))];
 const regionNames = [...new Set(records.map((item) => item.region))];
+const page = await getEntry('pages', 'explore');
+if (!page) throw new Error('Missing pages/explore content entry.');
+const { Content } = await render(page);
 ---
-<BaseLayout title="Explore" description="Search and map OBLP monitoring stations and surveys.">
+<BaseLayout title={page.data.title} description={page.data.description}>
   <Fragment slot="head"><link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" /></Fragment>
-  <PageIntro eyebrow="Explore the network" title="Find an observation window" description="Search monitoring stations and mapping surveys by observation type, ecosystem, or region—then move directly into each detailed record." />
+  <PageIntro eyebrow={page.data.eyebrow ?? page.data.title} title={page.data.heroTitle ?? page.data.title} description={page.data.heroText ?? page.data.description} />
+  <section class="editorial-content editorial-brief shell"><Content /></section>
   <section class="listing shell explorer" data-explorer>
     <DemoNotice />
     <div class="explore-controls" aria-label="Filter observation records">
