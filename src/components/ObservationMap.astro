@@ -1,0 +1,46 @@
+---
+interface MapRecord {
+  id: string;
+  title: string;
+  kind: 'station' | 'survey';
+  coordinates?: { latitude: number; longitude: number };
+  polygon?: Array<[number, number]>;
+}
+
+interface Props { records: MapRecord[]; }
+const { records } = Astro.props;
+const width = 960;
+const height = 480;
+const project = (longitude: number, latitude: number) => ({
+  x: ((longitude + 180) / 360) * width,
+  y: ((90 - latitude) / 180) * height,
+});
+const polygonPoints = (polygon: Array<[number, number]>) => polygon.map(([longitude, latitude]) => {
+  const point = project(longitude, latitude);
+  return `${point.x},${point.y}`;
+}).join(' ');
+---
+<figure class="observation-map">
+  <svg viewBox={`0 0 ${width} ${height}`} role="img" aria-labelledby="map-title map-description">
+    <title id="map-title">Geographic extent of published observation records</title>
+    <desc id="map-description">A world reference grid showing published station points and survey areas from the scientific content collections.</desc>
+    <rect class="map-ocean" width={width} height={height} />
+    <g class="map-graticule" aria-hidden="true">
+      {[-120, -60, 0, 60, 120].map((longitude) => { const p = project(longitude, 0); return <line x1={p.x} y1="0" x2={p.x} y2={height} />; })}
+      {[-60, -30, 0, 30, 60].map((latitude) => { const p = project(0, latitude); return <line x1="0" y1={p.y} x2={width} y2={p.y} />; })}
+    </g>
+    <g class="map-reference" aria-hidden="true">
+      <path d="M52 96l74-46 114 12 55 44-30 48-66 18-45 67-55-29-20-61zM267 271l68 25 34 91-45 74-42-57zM449 66l66-29 93 20 42 45 70 1 75 58-42 44-91-11-55 47-53-36-68 18-35-55zM552 245l56 18 33 91-43 87-52-52-26-78zM766 315l73-22 58 44-20 52-74 9-42-37z" />
+    </g>
+    <g class="survey-areas">
+      {records.filter((record) => record.polygon).map((record) => <polygon points={polygonPoints(record.polygon!)}><title>{record.title} survey area</title></polygon>)}
+    </g>
+    <g class="station-points">
+      {records.filter((record) => record.coordinates).map((record, index) => {
+        const p = project(record.coordinates!.longitude, record.coordinates!.latitude);
+        return <g><circle cx={p.x} cy={p.y} r="9" /><text x={p.x + 15} y={p.y - 13}>{String(index + 1).padStart(2, '0')}</text><title>{record.title} station</title></g>;
+      })}
+    </g>
+  </svg>
+  <figcaption><span>Published observation extent</span><span>Coordinates supplied by collection records</span></figcaption>
+</figure>

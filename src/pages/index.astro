@@ -1,45 +1,99 @@
 ---
-import { getCollection, getEntry, render } from 'astro:content';
+import { getCollection, getEntry } from 'astro:content';
 import BaseLayout from '../layouts/BaseLayout.astro';
+import AcousticFigure from '../components/AcousticFigure.astro';
+import ObservationMap from '../components/ObservationMap.astro';
+import FindingSummary from '../components/FindingSummary.astro';
 import ArrowLink from '../components/ArrowLink.astro';
 import DemoNotice from '../components/DemoNotice.astro';
 import { stationUrl, surveyUrl, withBase } from '../utils/urls';
 
 const page = await getEntry('pages', 'home');
-if (!page) throw new Error('Missing pages/home content entry.');
-const { Content } = await render(page);
-const stations = (await getCollection('stations', ({ data }) => data.status === 'published')).slice(0, 2);
-const surveys = (await getCollection('surveys', ({ data }) => data.status === 'published')).slice(0, 1);
-const network = [...stations.map((entry) => ({ entry, kind: 'Station', url: stationUrl(entry.id) })), ...surveys.map((entry) => ({ entry, kind: 'Survey', url: surveyUrl(entry.id) }))];
+if (!page || page.data.pageType !== 'home') throw new Error('Missing or invalid pages/home content entry.');
+
+const stations = await getCollection('stations', ({ data }) => data.status === 'published');
+const surveys = await getCollection('surveys', ({ data }) => data.status === 'published');
+const regions = new Map((await getCollection('regions')).map((region) => [region.id, region.data.title]));
+const findings = await getCollection('findings', ({ data }) => data.status === 'published' && data.featured);
+const partners = await getCollection('partners', ({ data }) => data.status === 'published' && data.partnerType !== 'funder');
+
+const mapRecords = [
+  ...stations.map((entry) => ({ id: entry.id, title: entry.data.title, kind: 'station' as const, coordinates: entry.data.coordinates })),
+  ...surveys.map((entry) => ({ id: entry.id, title: entry.data.title, kind: 'survey' as const, polygon: entry.data.polygon })),
+];
+const observationRecords = [
+  ...stations.map((entry) => ({ id: entry.id, title: entry.data.title, summary: entry.data.summary, kind: 'Station', region: regions.get(entry.data.region.id) ?? 'Region not specified', url: stationUrl(entry.id) })),
+  ...surveys.map((entry) => ({ id: entry.id, title: entry.data.title, summary: entry.data.summary, kind: 'Survey', region: regions.get(entry.data.region.id) ?? 'Region not specified', url: surveyUrl(entry.id) })),
+];
+const featuredFinding = findings[0];
+const findingContext = featuredFinding ? [
+  ...featuredFinding.data.regions.map((reference) => regions.get(reference.id) ?? reference.id),
+  ...featuredFinding.data.stations.map((reference) => stations.find((entry) => entry.id === reference.id)?.data.title ?? reference.id),
+  ...featuredFinding.data.surveys.map((reference) => surveys.find((entry) => entry.id === reference.id)?.data.title ?? reference.id),
+] : [];
 ---
 <BaseLayout title={page.data.title} description={page.data.description}>
-  <section class="hero hero-dark">
-    <div class="shell hero-grid">
-      <div class="hero-copy">
-        {page.data.eyebrow && <p class="eyebrow">{page.data.eyebrow}</p>}
-        <h1>{page.data.heroTitle ?? page.data.title}</h1>
-        {page.data.heroText && <p class="lede">{page.data.heroText}</p>}
-        <div class="button-row">{page.data.primaryCta && <a class="button light" href={withBase(page.data.primaryCta.href)}>{page.data.primaryCta.label}</a>}{page.data.secondaryCta && <a class="button ghost" href={withBase(page.data.secondaryCta.href)}>{page.data.secondaryCta.label}</a>}</div>
-      </div>
-      <div class="ocean-orbit" aria-label="A conceptual diagram of connected listening stations">
-        <span class="orbit orbit-one"></span><span class="orbit orbit-two"></span><span class="orbit orbit-three"></span>
-        <span class="pulse p1"></span><span class="pulse p2"></span><span class="pulse p3"></span><strong>OBLP</strong>
-      </div>
-    </div>
-  </section>
-
-  <section class="section shell editorial-content home-editorial"><Content /></section>
-
-  <section class="section section-tint">
-    <div class="shell">
-      <DemoNotice />
-      <div class="network-preview">
-        <div class="network-stage" aria-hidden="true"><svg viewBox="0 0 700 390"><path class="map-shape" d="M38 88c84-70 150-38 212 4 48 33 75 16 129-2 86-29 174-10 277 56l-19 188H56z"/><path class="route" d="M115 255 C240 112 390 302 584 148"/>{network.map((_, i) => <circle class={`node node-${i + 1}`} cx={[115, 349, 584][i]} cy={[255, 207, 148][i]} r="11" />)}</svg></div>
-        <div class="network-list" role="list">
-          {network.map(({ entry, kind, url }, i) => <article class="network-item" role="listitem"><span>0{i + 1}</span><div><p class="card-type">{kind}</p><h3>{entry.data.title}</h3><p>{entry.data.summary}</p><ArrowLink href={url} label={`View ${kind.toLowerCase()}`} /></div></article>)}
+  <section class="home-hero">
+    <div class="shell home-hero-grid">
+      <div class="home-hero-copy">
+        <p class="eyebrow">{page.data.eyebrow}</p>
+        <h1>{page.data.heroTitle}</h1>
+        <p class="lede">{page.data.heroText}</p>
+        <div class="button-row">
+          <a class="button light" href={withBase(page.data.primaryCta.href)}>{page.data.primaryCta.label}</a>
+          <a class="button ghost" href={withBase(page.data.secondaryCta.href)}>{page.data.secondaryCta.label}</a>
         </div>
       </div>
-      <p class="section-action"><ArrowLink href={withBase('explore/')} label="Open the geographic directory" /></p>
+      <AcousticFigure />
     </div>
   </section>
+
+  <section class="section shell why-listen">
+    <div><p class="eyebrow">{page.data.whyListen.eyebrow}</p><h2>{page.data.whyListen.title}</h2></div>
+    <div class="editorial-large"><p>{page.data.whyListen.text}</p><p>{page.data.whyListen.supportingText}</p></div>
+    <div class="listening-note"><span>Observation capacity</span><strong>{page.data.whyListen.observationNote}</strong></div>
+  </section>
+
+  <section class="network-section">
+    <div class="shell">
+      <div class="section-heading split-heading"><div><p class="eyebrow">{page.data.network.eyebrow}</p><h2>{page.data.network.title}</h2></div><p>{page.data.network.text}</p></div>
+      <DemoNotice />
+      <div class="network-composition">
+        <ObservationMap records={mapRecords} />
+        <div class="network-register">
+          <div class="network-register-head"><span>{observationRecords.length.toString().padStart(2, '0')} records</span><span>{regions.size.toString().padStart(2, '0')} regions</span></div>
+          {observationRecords.map((record, index) => <article>
+            <span>{String(index + 1).padStart(2, '0')}</span>
+            <div><p>{record.kind} · {record.region}</p><h3><a href={record.url}>{record.title}</a></h3></div>
+          </article>)}
+          <ArrowLink href={withBase('explore/')} label={page.data.network.actionLabel} />
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section shell knowledge-section">
+    <div class="knowledge-intro"><p class="eyebrow">{page.data.pathway.eyebrow}</p><h2>{page.data.pathway.title}</h2><p>{page.data.pathway.text}</p></div>
+    <ol class="knowledge-pathway">
+      {page.data.pathway.steps.map((step, index) => <li><span>{String(index + 1).padStart(2, '0')}</span><div><h3>{step.title}</h3><p>{step.text}</p></div></li>)}
+    </ol>
+  </section>
+
+  <section class="evidence-section">
+    <div class="shell evidence-grid">
+      <div class="evidence-intro"><p class="eyebrow">{page.data.findings.eyebrow}</p><h2>{page.data.findings.title}</h2><p>{page.data.findings.text}</p></div>
+      <div>
+        {featuredFinding ? <FindingSummary finding={featuredFinding} context={findingContext} href={withBase('research/')} /> : <p class="empty-state">No published featured findings are available.</p>}
+        <p class="evidence-action"><ArrowLink href={withBase('research/')} label={page.data.findings.actionLabel} /></p>
+      </div>
+    </div>
+  </section>
+
+  <section class="collaboration-section">
+    <div class="shell collaboration-grid">
+      <div><p class="eyebrow">{page.data.collaboration.eyebrow}</p><h2>{page.data.collaboration.title}</h2></div>
+      <div><p class="collaboration-copy">{page.data.collaboration.text}</p><div class="partner-register">{partners.map((partner, index) => <p><span>{String(index + 1).padStart(2, '0')}</span>{partner.data.name}<small>{partner.data.partnerType}</small></p>)}</div><a class="button light" href={withBase(page.data.collaboration.action.href)}>{page.data.collaboration.action.label}</a></div>
+    </div>
+  </section>
+
 </BaseLayout>

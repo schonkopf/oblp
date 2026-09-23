@@ -1,19 +1,29 @@
 ---
-import { getCollection, getEntry, render } from 'astro:content';
+import { getCollection, getEntry } from 'astro:content';
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import PageIntro from '../../components/PageIntro.astro';
 import DemoNotice from '../../components/DemoNotice.astro';
-import { stationUrl, surveyUrl } from '../../utils/urls';
+import FindingSummary from '../../components/FindingSummary.astro';
+import { stationUrl, surveyUrl, withBase } from '../../utils/urls';
 
 const publications = (await getCollection('publications', ({ data }) => data.status === 'published')).sort((a, b) => b.data.year - a.data.year);
+const findings = await getCollection('findings', ({ data }) => data.status === 'published');
+const stations = new Map((await getCollection('stations')).map((entry) => [entry.id, entry.data.title]));
+const surveys = new Map((await getCollection('surveys')).map((entry) => [entry.id, entry.data.title]));
+const regions = new Map((await getCollection('regions')).map((entry) => [entry.id, entry.data.title]));
 const page = await getEntry('pages', 'research');
-if (!page) throw new Error('Missing pages/research content entry.');
-const { Content } = await render(page);
+if (!page || page.data.pageType !== 'research') throw new Error('Missing or invalid pages/research content entry.');
 ---
 <BaseLayout title={page.data.title} description={page.data.description}>
-  <PageIntro eyebrow={page.data.eyebrow ?? page.data.title} title={page.data.heroTitle ?? page.data.title} description={page.data.heroText ?? page.data.description} />
-  <section class="section shell editorial-content research-editorial"><Content /></section>
+  <PageIntro eyebrow={page.data.eyebrow} title={page.data.heroTitle} description={page.data.heroText} />
+  <section class="section shell research-approach"><div><p class="eyebrow">{page.data.approach.eyebrow}</p><h2>{page.data.approach.title}</h2><p>{page.data.approach.text}</p></div><ol>{page.data.themes.map((theme, index) => <li><span>{String(index + 1).padStart(2, '0')}</span><h3>{theme.title}</h3><p>{theme.text}</p></li>)}</ol></section>
+  <section class="evidence-section"><div class="shell"><div class="section-heading split-heading"><div><p class="eyebrow">{page.data.evidence.eyebrow}</p><h2>{page.data.evidence.title}</h2></div><p>{page.data.evidence.text}</p></div><DemoNotice /><div class="finding-list">{findings.map((finding, index) => {
+    const context = [...finding.data.regions.map((item) => regions.get(item.id) ?? item.id), ...finding.data.stations.map((item) => stations.get(item.id) ?? item.id), ...finding.data.surveys.map((item) => surveys.get(item.id) ?? item.id)];
+    const href = finding.data.stations[0] ? stationUrl(finding.data.stations[0].id) : finding.data.surveys[0] ? surveyUrl(finding.data.surveys[0].id) : withBase('explore/');
+    return <FindingSummary finding={finding} context={context} href={href} linkLabel="Open a connected observation" marker={`F–${String(index + 1).padStart(2, '0')}`} />;
+  })}</div></div></section>
   <section class="section section-tint"><div class="shell">
+    <div class="section-heading split-heading"><div><p class="eyebrow">Publication directory</p><h2>{page.data.publicationsTitle}</h2></div><p>{page.data.publicationsText}</p></div>
     <DemoNotice />
     <div class="publication-list">
       {publications.map((publication) => <article class="publication-card">

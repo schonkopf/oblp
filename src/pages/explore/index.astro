@@ -1,5 +1,5 @@
 ---
-import { getCollection, getEntry, render } from 'astro:content';
+import { getCollection, getEntry } from 'astro:content';
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import PageIntro from '../../components/PageIntro.astro';
 import DemoNotice from '../../components/DemoNotice.astro';
@@ -16,13 +16,12 @@ const records = [
 const ecosystems = [...new Set(records.map((item) => item.ecosystem))];
 const regionNames = [...new Set(records.map((item) => item.region))];
 const page = await getEntry('pages', 'explore');
-if (!page) throw new Error('Missing pages/explore content entry.');
-const { Content } = await render(page);
+if (!page || page.data.pageType !== 'explore') throw new Error('Missing or invalid pages/explore content entry.');
 ---
 <BaseLayout title={page.data.title} description={page.data.description}>
   <Fragment slot="head"><link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" /></Fragment>
-  <PageIntro eyebrow={page.data.eyebrow ?? page.data.title} title={page.data.heroTitle ?? page.data.title} description={page.data.heroText ?? page.data.description} />
-  <section class="editorial-content editorial-brief shell"><Content /></section>
+  <PageIntro eyebrow={page.data.eyebrow} title={page.data.heroTitle} description={page.data.heroText} />
+  <section class="page-bridge shell"><p class="eyebrow">Directory context</p><h2>{page.data.directoryTitle}</h2><p>{page.data.introduction}</p></section>
   <section class="listing shell explorer" data-explorer>
     <DemoNotice />
     <div class="explore-controls" aria-label="Filter observation records">

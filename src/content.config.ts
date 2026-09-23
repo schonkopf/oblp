@@ -142,23 +142,68 @@ const partners = defineCollection({
   }),
 });
 
+const action = z.object({ label: z.string().min(1), href: z.string().min(1) });
+const editorialSection = z.object({
+  eyebrow: z.string().min(1),
+  title: z.string().min(1),
+  text: z.string().min(1),
+});
+const pageBase = z.object({
+  title: z.string().min(1),
+  description: z.string().min(1),
+  eyebrow: z.string().min(1),
+  heroTitle: z.string().min(1),
+  heroText: z.string().min(1),
+});
+
 const pages = defineCollection({
   loader: collection('pages'),
-  schema: z.object({
-    title: z.string().min(1),
-    description: z.string().min(1),
-    eyebrow: z.string().optional(),
-    heroTitle: z.string().optional(),
-    heroText: z.string().optional(),
-    primaryCta: z.object({
-      label: z.string(),
-      href: z.string(),
-    }).optional(),
-    secondaryCta: z.object({
-      label: z.string(),
-      href: z.string(),
-    }).optional(),
-  }),
+  schema: z.discriminatedUnion('pageType', [
+    pageBase.extend({
+      pageType: z.literal('home'),
+      primaryCta: action,
+      secondaryCta: action,
+      whyListen: editorialSection.extend({ supportingText: z.string().min(1), observationNote: z.string().min(1) }),
+      network: editorialSection.extend({ actionLabel: z.string().min(1) }),
+      pathway: editorialSection.extend({
+        steps: z.array(z.object({ title: z.string().min(1), text: z.string().min(1) })).min(3).max(6),
+      }),
+      findings: editorialSection.extend({ actionLabel: z.string().min(1) }),
+      collaboration: editorialSection.extend({ action: action }),
+    }),
+    pageBase.extend({
+      pageType: z.literal('explore'),
+      introduction: z.string().min(1),
+      directoryTitle: z.string().min(1),
+    }),
+    pageBase.extend({
+      pageType: z.literal('research'),
+      approach: editorialSection,
+      themes: z.array(z.object({ title: z.string().min(1), text: z.string().min(1) })).min(2).max(4),
+      evidence: editorialSection,
+      publicationsTitle: z.string().min(1),
+      publicationsText: z.string().min(1),
+    }),
+    pageBase.extend({
+      pageType: z.literal('resources'),
+      introduction: z.string().min(1),
+      categoryDescriptions: z.object({
+        dataset: z.string().min(1),
+        software: z.string().min(1),
+        tutorial: z.string().min(1),
+      }),
+    }),
+    pageBase.extend({
+      pageType: z.literal('about'),
+      purpose: editorialSection.extend({ supportingText: z.string().min(1) }),
+      capabilitiesIntro: editorialSection,
+      capabilities: z.array(z.object({ title: z.string().min(1), text: z.string().min(1) })).min(2).max(4),
+      opportunities: editorialSection.extend({
+        items: z.array(z.object({ title: z.string().min(1), text: z.string().min(1) })).min(2).max(4),
+      }),
+      contact: z.object({ title: z.string().min(1), text: z.string().min(1), action: action }),
+    }),
+  ]),
 });
 
 export const collections = {

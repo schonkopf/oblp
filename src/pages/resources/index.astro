@@ -1,22 +1,22 @@
 ---
-import { getCollection, getEntry, render } from 'astro:content';
+import { getCollection, getEntry } from 'astro:content';
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import PageIntro from '../../components/PageIntro.astro';
 import DemoNotice from '../../components/DemoNotice.astro';
 const resources = await getCollection('resources', ({ data }) => data.status === 'published');
-const categories = [{ id: 'dataset', title: 'Datasets' }, { id: 'software', title: 'Software' }, { id: 'tutorial', title: 'Tutorials' }];
+const categories = [{ id: 'dataset', title: 'Datasets' }, { id: 'software', title: 'Software' }, { id: 'tutorial', title: 'Tutorials' }] as const;
 const page = await getEntry('pages', 'resources');
-if (!page) throw new Error('Missing pages/resources content entry.');
-const { Content } = await render(page);
+if (!page || page.data.pageType !== 'resources') throw new Error('Missing or invalid pages/resources content entry.');
+const pageData = page.data;
 ---
 <BaseLayout title={page.data.title} description={page.data.description}>
-  <PageIntro eyebrow={page.data.eyebrow ?? page.data.title} title={page.data.heroTitle ?? page.data.title} description={page.data.heroText ?? page.data.description} />
-  <section class="editorial-content editorial-brief shell"><Content /></section>
+  <PageIntro eyebrow={page.data.eyebrow} title={page.data.heroTitle} description={page.data.heroText} />
+  <section class="page-bridge shell"><p class="eyebrow">Reuse the work</p><h2>Context travels with every resource.</h2><p>{page.data.introduction}</p></section>
   <section class="listing shell"><DemoNotice />
     <nav class="category-nav" aria-label="Resource categories">{categories.map((category) => <a href={`#${category.id}`}>{category.title}<span>{resources.filter((item) => item.data.resourceType === category.id).length}</span></a>)}</nav>
     {categories.map((category) => {
       const items = resources.filter((item) => item.data.resourceType === category.id);
-      return <section class="resource-section" id={category.id}><div class="resource-heading"><p class="eyebrow">Resource type</p><h2>{category.title}</h2></div><div class="resource-grid">
+      return <section class="resource-section" id={category.id}><div class="resource-heading"><p class="eyebrow">Resource type</p><h2>{category.title}</h2><p>{pageData.categoryDescriptions[category.id]}</p></div><div class="resource-grid">
         {items.length ? items.map((resource) => <article class="resource-card"><p class="card-type">{resource.data.resourceType}</p><h3>{resource.data.title}</h3><p>{resource.data.summary}</p><dl><div><dt>License</dt><dd>{resource.data.license ?? 'Not specified'}</dd></div><div><dt>Access</dt><dd>{resource.data.accessConditions ?? 'Contact the project for access details.'}</dd></div>{resource.data.citation && <div><dt>Cite as</dt><dd>{resource.data.citation}</dd></div>}</dl>{resource.data.url ? <a class="arrow-link" href={resource.data.url}>Open external resource <span aria-hidden="true">↗</span></a> : resource.data.file ? <a class="arrow-link" href={resource.data.file}>Download resource <span aria-hidden="true">↓</span></a> : <span class="availability">Catalogue record only</span>}</article>) : <p class="empty-state">No published {category.title.toLowerCase()} are available yet.</p>}
       </div></section>;
     })}
