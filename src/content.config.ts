@@ -170,11 +170,6 @@ const pages = defineCollection({
       }),
       findings: editorialSection.extend({ actionLabel: z.string().min(1) }),
       collaboration: editorialSection.extend({ action: action }),
-      pathways: z.object({
-        eyebrow: z.string().min(1),
-        title: z.string().min(1),
-        items: z.array(z.object({ title: z.string().min(1), text: z.string().min(1), href: z.string().min(1) })).length(3),
-      }),
     }),
     pageBase.extend({
       pageType: z.literal('explore'),
