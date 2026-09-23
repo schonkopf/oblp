@@ -40,7 +40,7 @@ Only entries with `status: published` are included in indexes and dynamic pages.
 
 ## Content architecture
 
-Schemas are defined in `src/content.config.ts`; records live in `src/content/<collection>/`. The ten collections are:
+Schemas are defined in `src/content.config.ts`; records live in `src/content/<collection>/`. The eleven collections are:
 
 | Collection | Purpose | Principal references |
 | --- | --- | --- |
@@ -54,6 +54,11 @@ Schemas are defined in `src/content.config.ts`; records live in `src/content/<co
 | `resources` | Datasets, software, protocols, and teaching material | — |
 | `people` | Project participants | — |
 | `partners` | Collaborating organizations | — |
+| `pages` | Page-specific editorial copy | scientific collections at composition time |
+
+Page Markdown is editorial rather than presentational. Files in `src/content/pages/` expose concise, typed fields for page titles, introductions, section copy, and actions. Primary Astro routes decide how those fields are composed and connect them with scientific records; Markdown heading order and list syntax do not determine page layout. The homepage, for example, takes its narrative copy from `pages/home.md` while its observation network and research evidence come from the stations, surveys, regions, findings, and partner collections.
+
+When editing a primary page, change its corresponding file in `src/content/pages/`. Do not duplicate stations, surveys, findings, publications, or other research records there. Add or revise those records in their dedicated collections so references, metadata, and publication status remain authoritative throughout the site.
 
 Each filename supplies a stable, URL-safe content ID. References use those IDs and are checked at build time. Common fields include `title`, `summary`, `status`, `demo`, and optional `updated`. Media and domain-specific fields are optional so incomplete historical records can render explicit missing-data states instead of failing unexpectedly.
 
