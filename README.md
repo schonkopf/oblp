@@ -97,4 +97,4 @@ Pushing to `main` triggers the workflow. A successful local build confirms that 
 
 Reusable tokens for color, typography, spacing, radii, and layout are defined at the top of `src/styles/global.css`. Shared structure lives in `src/layouts/BaseLayout.astro`, and reusable components are in `src/components/`.
 
-The site ships no client-side application framework and currently adds no client-side JavaScript. Navigation and content remain usable with semantic HTML alone.
+The site ships no client-side application framework. The Explore directory progressively enhances its searchable cards with a Leaflet and GeoJSON map; navigation and all record links remain available as semantic HTML if JavaScript or map tiles are unavailable.

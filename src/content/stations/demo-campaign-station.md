@@ -6,6 +6,11 @@ demo: true
 region: demo-pelagic-margin
 stationType: campaign
 habitat: "Illustrative offshore habitat"
+ecosystem: "Pelagic margin"
+observationTypes: [acoustic, multimodal]
+coordinates:
+  latitude: 41.2
+  longitude: -48.8
 depthM: 40
 monitoringPeriod: "Demonstration campaign"
 methods:

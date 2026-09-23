@@ -1,63 +1,59 @@
 ---
-import { getCollection } from 'astro:content';
+import { getCollection, getEntry } from 'astro:content';
 import BaseLayout from '../layouts/BaseLayout.astro';
 import ArrowLink from '../components/ArrowLink.astro';
 import DemoNotice from '../components/DemoNotice.astro';
 import { stationUrl, surveyUrl, withBase } from '../utils/urls';
 
+const site = await getEntry('site', 'overview');
 const stations = (await getCollection('stations', ({ data }) => data.status === 'published')).slice(0, 2);
 const surveys = (await getCollection('surveys', ({ data }) => data.status === 'published')).slice(0, 1);
+const network = [...stations.map((entry) => ({ entry, kind: 'Station', url: stationUrl(entry.id) })), ...surveys.map((entry) => ({ entry, kind: 'Survey', url: surveyUrl(entry.id) }))];
 ---
-
-<BaseLayout title="Home" description="The Ocean Biodiversity Listening Project uses sound to investigate aquatic biodiversity and ecosystem change.">
-  <section class="hero shell">
-    <div class="hero-copy">
-      <p class="eyebrow">Ocean Biodiversity Listening Project</p>
-      <h1>Listening reveals a living ocean.</h1>
-      <p class="lede">OBLP develops open, reproducible approaches for observing aquatic biodiversity and ecosystem change through sound.</p>
-      <div class="button-row">
-        <a class="button primary" href={withBase('explore/')}>Explore observations</a>
-        <a class="button secondary" href={withBase('research/')}>Our research</a>
+<BaseLayout title="Home" description="The Ocean Biodiversity Listening Project connects acoustic observations across marine ecosystems.">
+  <section class="hero hero-dark">
+    <div class="shell hero-grid">
+      <div class="hero-copy">
+        <p class="eyebrow">Ocean Biodiversity Listening Project</p>
+        <h1>Listening to marine ecosystems across space and time.</h1>
+        <p class="lede">{site?.data.overview}</p>
+        <div class="button-row"><a class="button light" href={withBase('explore/')}>Explore the network</a><a class="button ghost" href={withBase('about/')}>Collaborate with us</a></div>
       </div>
-    </div>
-    <div class="signal-field" aria-hidden="true">
-      <div class="signal-label"><span>Acoustic window</span><span>00:42:18</span></div>
-      <svg viewBox="0 0 720 300" role="img">
-        <defs><linearGradient id="ocean" x1="0" x2="1"><stop stop-color="#0d5870"/><stop offset="1" stop-color="#20a39a"/></linearGradient></defs>
-        <path d="M0 160 C35 160 35 154 70 154 S105 167 140 167 175 118 210 118 245 177 280 177 315 146 350 146 385 158 420 158 455 84 490 84 525 170 560 170 595 128 630 128 665 152 720 152" fill="none" stroke="url(#ocean)" stroke-width="3"/>
-        <path d="M0 185 C30 185 40 181 72 181 S110 192 145 192 175 174 210 174 240 190 275 190 310 179 345 179 380 188 415 188 450 161 485 161 520 190 555 190 590 177 625 177 670 185 720 185" fill="none" stroke="#8fc9ca" stroke-width="1.5"/>
-        {Array.from({ length: 9 }).map((_, i) => <line x1="0" x2="720" y1={32 + i * 27} y2={32 + i * 27} stroke="#dbe8ea" stroke-width="1" />)}
-      </svg>
-      <div class="signal-axis"><span>Low frequency</span><span>High frequency</span></div>
+      <div class="ocean-orbit" aria-label="A conceptual diagram of connected listening stations">
+        <span class="orbit orbit-one"></span><span class="orbit orbit-two"></span><span class="orbit orbit-three"></span>
+        <span class="pulse p1"></span><span class="pulse p2"></span><span class="pulse p3"></span><strong>OBLP</strong>
+      </div>
     </div>
   </section>
 
-  <section class="section shell">
-    <DemoNotice />
-    <div class="section-heading split-heading">
-      <div><p class="eyebrow">A connected observatory</p><h2>From recordings to ecological understanding</h2></div>
-      <p>Structured observations connect places, surveys, recordings, visual evidence, findings, and open resources without hiding uncertainty or missing data.</p>
-    </div>
-    <div class="process-grid">
-      <article><span>01</span><h3>Listen</h3><p>Collect comparable acoustic observations across environments and timescales.</p></article>
-      <article><span>02</span><h3>Interpret</h3><p>Link acoustic patterns with ecological context and complementary observations.</p></article>
-      <article><span>03</span><h3>Share</h3><p>Turn methods and evidence into accessible resources for research and collaboration.</p></article>
-    </div>
+  <section class="section shell why-grid">
+    <div><p class="eyebrow">Why listen to the ocean?</p><h2>Sound carries evidence of life.</h2></div>
+    <div class="large-copy"><p>Marine soundscapes bring together biological activity, physical processes, and human presence. Listening can complement visual surveys and extend observation through darkness, depth, and changing seasons.</p><p>OBLP’s role is to connect those observations without separating them from their ecological context, methods, or uncertainty.</p></div>
   </section>
 
   <section class="section section-tint">
     <div class="shell">
-      <div class="section-heading"><p class="eyebrow">Explore the demo collection</p><h2>Observations at multiple scales</h2></div>
-      <div class="card-grid">
-        {stations.map((station) => <article class="data-card"><p class="card-type">{station.data.stationType} station</p><h3>{station.data.title}</h3><p>{station.data.summary}</p><ArrowLink href={stationUrl(station.id)} label="View station" /></article>)}
-        {surveys.map((survey) => <article class="data-card feature-card"><p class="card-type">{survey.data.surveyType} survey</p><h3>{survey.data.title}</h3><p>{survey.data.summary}</p><ArrowLink href={surveyUrl(survey.id)} label="View survey" /></article>)}
+      <div class="section-heading split-heading"><div><p class="eyebrow">Listening network</p><h2>One ocean, many windows.</h2></div><p>Select a record to preview the ways fixed stations and spatial surveys connect across the demonstration network.</p></div>
+      <DemoNotice />
+      <div class="network-preview">
+        <div class="network-stage" aria-hidden="true"><svg viewBox="0 0 700 390"><path class="map-shape" d="M38 88c84-70 150-38 212 4 48 33 75 16 129-2 86-29 174-10 277 56l-19 188H56z"/><path class="route" d="M115 255 C240 112 390 302 584 148"/>{network.map((_, i) => <circle class={`node node-${i + 1}`} cx={[115, 349, 584][i]} cy={[255, 207, 148][i]} r="11" />)}</svg></div>
+        <div class="network-list" role="list">
+          {network.map(({ entry, kind, url }, i) => <article class="network-item" role="listitem"><span>0{i + 1}</span><div><p class="card-type">{kind}</p><h3>{entry.data.title}</h3><p>{entry.data.summary}</p><ArrowLink href={url} label={`View ${kind.toLowerCase()}`} /></div></article>)}
+        </div>
       </div>
+      <p class="section-action"><ArrowLink href={withBase('explore/')} label="Open the geographic directory" /></p>
     </div>
   </section>
 
-  <section class="section shell statement">
-    <p class="eyebrow">Why sound?</p>
-    <blockquote>Acoustic observations can extend how we perceive ecological activity—continuously, non-invasively, and across scales.</blockquote>
-    <ArrowLink href={withBase('about/')} label="Learn about OBLP" />
+  <section class="section shell">
+    <div class="section-heading"><p class="eyebrow">Analysis pipeline</p><h2>From ocean signal to shared insight.</h2></div>
+    <ol class="pipeline">
+      <li><span>01</span><h3>Observe</h3><p>Collect acoustic and contextual observations with documented protocols.</p></li>
+      <li><span>02</span><h3>Prepare</h3><p>Standardize metadata, quality checks, and comparable analysis windows.</p></li>
+      <li><span>03</span><h3>Interpret</h3><p>Relate patterns to habitats, seasons, and complementary evidence.</p></li>
+      <li><span>04</span><h3>Share</h3><p>Publish methods, data products, and evidence with clear provenance.</p></li>
+    </ol>
   </section>
+
+  <section class="collaboration-band"><div class="shell"><p class="eyebrow">International collaboration</p><h2>The ocean connects every listening point.</h2><p>Bring a place, dataset, method, or question to a research network designed for exchange across borders and disciplines.</p><a class="button light" href={withBase('about/#collaborate')}>Explore ways to collaborate</a></div></section>
 </BaseLayout>

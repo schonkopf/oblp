@@ -6,6 +6,10 @@ demo: true
 authors: ["Demo Author"]
 year: 2026
 venue: "Demonstration venue"
+journal: "Demonstration Journal of Ecoacoustics"
+doi: "https://doi.org/10.0000/demo.oblp"
+relatedStations: [demo-continuous-listening]
+relatedSurveys: [demo-listening-transect]
 updated: 2026-09-22
 ---
 

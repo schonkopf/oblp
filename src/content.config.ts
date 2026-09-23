@@ -16,6 +16,7 @@ const common = z.object({
   demo: z.boolean().default(false),
   updated: z.coerce.date().optional(),
 });
+const observationType = z.enum(['acoustic', 'visual', 'environmental', 'multimodal']);
 const collection = (name: string) => glob({ pattern: '**/*.{md,json,yaml,yml}', base: `./src/content/${name}` });
 
 const regions = defineCollection({
@@ -35,6 +36,8 @@ const stations = defineCollection({
     depthM: z.number().nonnegative().optional(),
     coordinates: z.object({ latitude: z.number(), longitude: z.number() }).optional(),
     monitoringPeriod: z.string().optional(),
+    observationTypes: z.array(observationType).default(['acoustic']),
+    ecosystem: z.string().optional(),
     methods: z.array(z.string()).default([]),
     media: mediaAsset.optional(),
   }),
@@ -47,6 +50,9 @@ const surveys = defineCollection({
     stations: z.array(reference('stations')).default([]),
     surveyType: z.enum(['spatial', 'temporal', 'experimental']),
     period: z.string().optional(),
+    observationTypes: z.array(observationType).default(['acoustic']),
+    ecosystem: z.string().optional(),
+    polygon: z.array(z.tuple([z.number(), z.number()])).min(3).optional(),
     methods: z.array(z.string()).default([]),
     media: mediaAsset.optional(),
   }),
@@ -94,19 +100,24 @@ const publications = defineCollection({
     authors: z.array(z.string()).min(1),
     year: z.number().int().min(1900).max(2100),
     venue: z.string().optional(),
+    journal: z.string().optional(),
     doi: z.url().optional(),
     url: z.url().optional(),
     citation: z.string().optional(),
+    relatedStations: z.array(reference('stations')).default([]),
+    relatedSurveys: z.array(reference('surveys')).default([]),
   }),
 });
 
 const resources = defineCollection({
   loader: collection('resources'),
   schema: common.extend({
-    resourceType: z.enum(['dataset', 'software', 'protocol', 'teaching', 'other']),
+    resourceType: z.enum(['dataset', 'software', 'tutorial', 'protocol', 'teaching', 'other']),
     url: z.url().optional(),
     file: z.string().optional(),
     license: z.string().optional(),
+    citation: z.string().optional(),
+    accessConditions: z.string().optional(),
   }),
 });
 
@@ -131,6 +142,19 @@ const partners = defineCollection({
   }),
 });
 
+const site = defineCollection({
+  loader: collection('site'),
+  schema: z.object({
+    title: z.string(),
+    mission: z.string(),
+    overview: z.string(),
+    contactEmail: z.email(),
+    contactInstitution: z.string(),
+    capabilities: z.array(z.object({ title: z.string(), description: z.string() })),
+    opportunities: z.array(z.object({ title: z.string(), description: z.string() })),
+  }),
+});
+
 export const collections = {
   regions,
   stations,
@@ -142,4 +166,5 @@ export const collections = {
   resources,
   people,
   partners,
+  site,
 };
