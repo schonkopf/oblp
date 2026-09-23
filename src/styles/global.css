@@ -180,9 +180,12 @@ nav a:hover, nav a[aria-current='page'] { color: var(--color-ocean-900); box-sha
 .detail-grid { display: grid; grid-template-columns: minmax(0,1fr) 20rem; gap: clamp(3rem,8vw,7rem); padding-block: var(--space-7) var(--space-8); }.detail-content { max-width: var(--reading); }.detail-content h2 { margin-top: var(--space-6); font-size: 2.3rem; }.prose { color: var(--color-muted); }.prose p { margin-bottom: 1.3rem; }.metadata { align-self: start; padding-top: var(--space-4); border-top: 2px solid var(--color-teal-600); }.metadata dl { margin: 0; }.metadata div { padding-block: .85rem; border-bottom: 1px solid var(--color-line); }.metadata dt { color: var(--color-muted); font-size: .7rem; letter-spacing: .1em; text-transform: uppercase; }.metadata dd { margin: .2rem 0 0; }
 .record-list { display: grid; }.record { display: grid; grid-template-columns: 8rem 1fr auto; align-items: start; gap: var(--space-5); padding-block: var(--space-5); border-bottom: 1px solid var(--color-line); }.record-meta { color: var(--color-teal-600); font-size: .72rem; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; }.record h2 { margin: 0 0 .7rem; font-family: var(--font-serif); font-size: 1.8rem; }.record p { max-width: 44rem; margin: 0; color: var(--color-muted); }
 
-.site-footer { color: #c5d8dc; background: var(--color-ocean-950); }
-.footer-inner { display: flex; justify-content: space-between; gap: var(--space-3); padding-block: var(--space-4); border-top: 1px solid rgba(255,255,255,.16); font-size: .75rem; }
-.footer-inner a { color: #fff; }
+.site-footer { color: var(--color-muted); background: var(--color-surface); }
+.footer-inner { display: flex; justify-content: space-between; gap: var(--space-3); padding-block: var(--space-4); border-top: 1px solid var(--color-line); font-size: .75rem; }
+.footer-inner a { color: var(--color-ink); }
+main:has(> :is(.section-dark, .collaboration-section):last-child) + .site-footer { color: #c5d8dc; background: var(--color-ocean-950); }
+main:has(> :is(.section-dark, .collaboration-section):last-child) + .site-footer .footer-inner { border-color: rgba(255,255,255,.16); }
+main:has(> :is(.section-dark, .collaboration-section):last-child) + .site-footer a { color: #fff; }
 
 @media (max-width: 900px) {
   .home-hero-grid { grid-template-columns: 1fr; }.acoustic-figure { max-width: 42rem; }.why-listen { grid-template-columns: 1fr 1fr; }.listening-note { grid-column: 2; }
