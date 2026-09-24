@@ -163,7 +163,6 @@ const pages = defineCollection({
       pageType: z.literal('home'),
       primaryCta: action,
       secondaryCta: action,
-      whyListen: editorialSection.extend({ supportingText: z.string().min(1), observationNote: z.string().min(1) }),
       network: editorialSection.extend({ actionLabel: z.string().min(1) }),
       pathway: editorialSection.extend({
         steps: z.array(z.object({ title: z.string().min(1), text: z.string().min(1) })).min(3).max(6),

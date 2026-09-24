@@ -14,13 +14,6 @@ secondaryCta:
   label: "Discover our research"
   href: "/research/"
 
-whyListen:
-  eyebrow: "Why listen"
-  title: "Sound reveals life beneath the surface"
-  text: "Fishes, snapping shrimps, whales, and many other marine organisms produce sound. By listening to these dynamic soundscapes, we can reveal biological activity and ecosystem processes that conventional visual surveys can easily miss."
-  supportingText: "Tracking soundscapes through day and night, across seasons, and before and after disturbances allows us to investigate how marine ecosystems vary and change across temporal and spatial scales."
-  observationNote: "Autonomous recorders · Drifting platforms · Day and night · Seasons and monsoons · Storms and disturbances · Coral reefs to the deep sea"
-
 network:
   eyebrow: "An international observation network"
   title: "Listening across marine ecosystems"

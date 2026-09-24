@@ -1,29 +1,25 @@
 ---
 import { getCollection, getEntry } from 'astro:content';
 import BaseLayout from '../layouts/BaseLayout.astro';
-import AcousticFigure from '../components/AcousticFigure.astro';
-import ObservationMap from '../components/ObservationMap.astro';
 import FindingSummary from '../components/FindingSummary.astro';
 import ArrowLink from '../components/ArrowLink.astro';
-import DemoNotice from '../components/DemoNotice.astro';
-import { stationUrl, surveyUrl, withBase } from '../utils/urls';
+import { withBase } from '../utils/urls';
 
 const page = await getEntry('pages', 'home');
 if (!page || page.data.pageType !== 'home') throw new Error('Missing or invalid pages/home content entry.');
 
 const stations = await getCollection('stations', ({ data }) => data.status === 'published');
 const surveys = await getCollection('surveys', ({ data }) => data.status === 'published');
+const resources = await getCollection('resources', ({ data }) => data.status === 'published');
 const regions = new Map((await getCollection('regions')).map((region) => [region.id, region.data.title]));
 const findings = await getCollection('findings', ({ data }) => data.status === 'published' && data.featured);
 const partners = await getCollection('partners', ({ data }) => data.status === 'published' && data.partnerType !== 'funder');
 
-const mapRecords = [
-  ...stations.map((entry) => ({ id: entry.id, title: entry.data.title, kind: 'station' as const, coordinates: entry.data.coordinates })),
-  ...surveys.map((entry) => ({ id: entry.id, title: entry.data.title, kind: 'survey' as const, polygon: entry.data.polygon })),
-];
-const observationRecords = [
-  ...stations.map((entry) => ({ id: entry.id, title: entry.data.title, summary: entry.data.summary, kind: 'Station', region: regions.get(entry.data.region.id) ?? 'Region not specified', url: stationUrl(entry.id) })),
-  ...surveys.map((entry) => ({ id: entry.id, title: entry.data.title, summary: entry.data.summary, kind: 'Survey', region: regions.get(entry.data.region.id) ?? 'Region not specified', url: surveyUrl(entry.id) })),
+const networkCounts = [
+  { label: 'Stations', value: stations.length },
+  { label: 'Surveys', value: surveys.length },
+  { label: 'Resources', value: resources.length },
+  { label: 'Partners', value: partners.length },
 ];
 const featuredFinding = findings[0];
 const findingContext = featuredFinding ? [
@@ -44,28 +40,23 @@ const findingContext = featuredFinding ? [
           <a class="button ghost" href={withBase(page.data.secondaryCta.href)}>{page.data.secondaryCta.label}</a>
         </div>
       </div>
-      <AcousticFigure />
+      <figure class="hero-image">
+        <img src={withBase('assets/images/pages/home/Header.jpg')} width="2048" height="1536" alt="Underwater acoustic observation for the Ocean Biodiversity Listening Project" fetchpriority="high" />
+      </figure>
     </div>
-  </section>
-
-  <section class="section shell why-listen">
-    <div><p class="eyebrow">{page.data.whyListen.eyebrow}</p><h2>{page.data.whyListen.title}</h2></div>
-    <div class="editorial-large"><p>{page.data.whyListen.text}</p><p>{page.data.whyListen.supportingText}</p></div>
-    <div class="listening-note"><span>Observation capacity</span><strong>{page.data.whyListen.observationNote}</strong></div>
   </section>
 
   <section class="network-section">
     <div class="shell">
       <div class="section-heading split-heading"><div><p class="eyebrow">{page.data.network.eyebrow}</p><h2>{page.data.network.title}</h2></div><p>{page.data.network.text}</p></div>
-      <DemoNotice />
       <div class="network-composition">
-        <ObservationMap records={mapRecords} />
-        <div class="network-register">
-          <div class="network-register-head"><span>{observationRecords.length.toString().padStart(2, '0')} records</span><span>{regions.size.toString().padStart(2, '0')} regions</span></div>
-          {observationRecords.map((record, index) => <article>
-            <span>{String(index + 1).padStart(2, '0')}</span>
-            <div><p>{record.kind} · {record.region}</p><h3><a href={record.url}>{record.title}</a></h3></div>
-          </article>)}
+        <figure class="network-image">
+          <img src={withBase('assets/images/pages/home/Network.jpg')} width="2048" height="970" alt="Ocean Biodiversity Listening Project observation network" loading="lazy" />
+        </figure>
+        <div class="network-summary">
+          <dl class="network-stats">
+            {networkCounts.map((stat) => <div><dt>{stat.label}</dt><dd>{stat.value.toString().padStart(2, '0')}</dd></div>)}
+          </dl>
           <ArrowLink href={withBase('explore/')} label={page.data.network.actionLabel} />
         </div>
       </div>
@@ -91,7 +82,10 @@ const findingContext = featuredFinding ? [
 
   <section class="collaboration-section">
     <div class="shell collaboration-grid">
-      <div><p class="eyebrow">{page.data.collaboration.eyebrow}</p><h2>{page.data.collaboration.title}</h2></div>
+      <div class="collaboration-lead">
+        <p class="eyebrow">{page.data.collaboration.eyebrow}</p><h2>{page.data.collaboration.title}</h2>
+        <figure class="collaboration-image"><img src={withBase('assets/images/pages/home/Connect.jpg')} width="1920" height="1280" alt="International collaborators advancing shared ocean listening practices" loading="lazy" /></figure>
+      </div>
       <div><p class="collaboration-copy">{page.data.collaboration.text}</p><div class="partner-register">{partners.map((partner, index) => <p><span>{String(index + 1).padStart(2, '0')}</span>{partner.data.name}<small>{partner.data.partnerType}</small></p>)}</div><a class="button light" href={withBase(page.data.collaboration.action.href)}>{page.data.collaboration.action.label}</a></div>
     </div>
   </section>
