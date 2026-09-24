@@ -2,23 +2,23 @@
 import { getCollection, getEntry } from 'astro:content';
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import PageIntro from '../../components/PageIntro.astro';
-import DemoNotice from '../../components/DemoNotice.astro';
 import { withBase } from '../../utils/urls';
 
 const page = await getEntry('pages', 'about');
 if (!page || page.data.pageType !== 'about') throw new Error('Missing or invalid pages/about content entry.');
 const people = (await getCollection('people', ({ data }) => data.status === 'published' && data.teamMembership === 'current')).sort((a, b) => a.data.name.localeCompare(b.data.name));
 const allPartners = await getCollection('partners', ({ data }) => data.status === 'published');
-const internationalPartners = allPartners.filter(({ data }) => ['research', 'infrastructure', 'community'].includes(data.partnerType)).sort((a, b) => a.data.name.localeCompare(b.data.name));
-const funders = allPartners.filter(({ data }) => data.partnerType === 'funder').sort((a, b) => a.data.name.localeCompare(b.data.name));
+const internationalPartners = allPartners.filter(({ data }) => ['research', 'network', 'infrastructure', 'community'].includes(data.partnerType)).sort((a, b) => a.data.name.localeCompare(b.data.name));
+const funding = (await getCollection('funding', ({ data }) => data.status === 'published')).sort((a, b) => b.data.startYear - a.data.startYear || a.data.title.localeCompare(b.data.title));
+const fundedProjects = await Promise.all(funding.map(async (record) => ({ record, agency: await getEntry(record.data.agency) })));
 const mediaUrl = (src: string) => /^(?:[a-z]+:)?\/\//i.test(src) || src.startsWith('data:') ? src : withBase(src);
+const fundingPeriod = (startYear: number, endYear?: number) => endYear && endYear !== startYear ? `${startYear}–${endYear}` : String(startYear);
 ---
 <BaseLayout title={page.data.title} description={page.data.description}>
   <PageIntro eyebrow={page.data.eyebrow} title={page.data.heroTitle} description={page.data.heroText} />
 
   <section class="section shell" aria-labelledby="team-heading">
     <div class="section-heading split-heading"><div><p class="eyebrow">{page.data.team.eyebrow}</p><h2 id="team-heading">{page.data.team.title}</h2></div><p>{page.data.team.text}</p></div>
-    {people.some(({ data }) => data.demo) && <DemoNotice />}
     <div class="people-grid">{people.map(({ data }) => <article class:list={['person-card', { 'person-card--with-portrait': data.portrait }]}>
       {data.portrait && <img class="person-portrait" src={mediaUrl(data.portrait.src)} alt={data.portrait.alt} loading="lazy" />}
       <div><h3>{data.profileUrl ? <a href={data.profileUrl} target="_blank" rel="noopener">{data.name} <span aria-hidden="true">↗</span></a> : data.name}</h3><p class="role">{data.role}</p>{data.affiliation && <p>{data.affiliation}</p>}</div>
@@ -27,10 +27,9 @@ const mediaUrl = (src: string) => /^(?:[a-z]+:)?\/\//i.test(src) || src.startsWi
 
   <section class="section section-dark" aria-labelledby="partners-heading"><div class="shell">
     <div class="section-heading split-heading"><div><p class="eyebrow">{page.data.partners.eyebrow}</p><h2 id="partners-heading">{page.data.partners.title}</h2></div><p>{page.data.partners.text}</p></div>
-    {internationalPartners.some(({ data }) => data.demo) && <DemoNotice />}
     <div class="partner-list">{internationalPartners.map(({ data }) => <article class:list={{ 'partner-with-logo': data.logo }}>
       {data.logo && <img class="partner-logo" src={mediaUrl(data.logo.src)} alt={data.logo.alt} loading="lazy" />}
-      <div><p class="card-type">{data.partnerType}{data.country && <> · {data.country}</>}</p><h3>{data.url ? <a href={data.url} target="_blank" rel="noopener">{data.name} <span aria-hidden="true">↗</span></a> : data.name}</h3><p>{data.collaborationFocus ?? data.summary}</p></div>
+      <div><p class="card-type">{data.country ?? (data.partnerType === 'network' ? 'International network' : data.partnerType)}</p><h3>{data.url ? <a href={data.url} target="_blank" rel="noopener">{data.name} <span aria-hidden="true">↗</span></a> : data.name}</h3><p>{data.collaborationFocus ?? data.summary}</p></div>
     </article>)}</div>
   </div></section>
 
@@ -42,9 +41,14 @@ const mediaUrl = (src: string) => /^(?:[a-z]+:)?\/\//i.test(src) || src.startsWi
 
   <section class="section section-tint" aria-labelledby="funding-heading"><div class="shell funding-layout">
     <div class="section-heading"><p class="eyebrow">{page.data.funding.eyebrow}</p><h2 id="funding-heading">{page.data.funding.title}</h2><p class="lede">{page.data.funding.text}</p></div>
-    <div>{funders.some(({ data }) => data.demo) && <DemoNotice />}<div class="funders">{funders.map(({ data }) => <article class:list={{ 'funder-with-logo': data.logo }}>
-      {data.logo && <img class="funder-logo" src={mediaUrl(data.logo.src)} alt={data.logo.alt} loading="lazy" />}
-      <div><h3>{data.url ? <a href={data.url} target="_blank" rel="noopener">{data.name} <span aria-hidden="true">↗</span></a> : data.name}</h3><p>{data.collaborationFocus ?? data.summary}</p></div>
-    </article>)}</div></div>
+    <div class="funding-records">{fundedProjects.map(({ record, agency }) => agency && <article>
+      <p class="funding-period">{fundingPeriod(record.data.startYear, record.data.endYear)}</p>
+      <div>
+        <p class="funding-source">{agency.data.name}{record.data.programme && <> · {record.data.programme}</>}</p>
+        {record.data.projectTitle && <h3>{record.data.url ? <a href={record.data.url} target="_blank" rel="noopener">{record.data.projectTitle} <span aria-hidden="true">↗</span></a> : record.data.projectTitle}</h3>}
+        {!record.data.projectTitle && record.data.url && <p><a href={record.data.url} target="_blank" rel="noopener">Project details <span aria-hidden="true">↗</span></a></p>}
+        {record.data.grantNumber && <p class="grant-number">Grant {record.data.grantNumber}</p>}
+      </div>
+    </article>)}</div>
   </div></section>
 </BaseLayout>

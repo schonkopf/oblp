@@ -32,7 +32,7 @@ npm run preview
 - `/explore/` — published station and survey index
 - `/research/` — research themes, findings, and publication records
 - `/resources/` — resources catalogue
-- `/about/` — project purpose, people, and partners
+- `/about/` — research team, international partners, collaboration, and funding
 - `/stations/[id]/` — generated station detail pages
 - `/surveys/[id]/` — generated survey detail pages
 
