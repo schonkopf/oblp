@@ -15,6 +15,7 @@ const { entry } = Astro.props;
 const { Content } = await render(entry);
 const region = await getEntry(entry.data.region);
 const stations = (await Promise.all(entry.data.stations.map((station) => getEntry(station)))).filter((station) => station?.data.status === 'published');
+const formatDate = new Intl.DateTimeFormat('en', { year: 'numeric', month: 'long', day: 'numeric', timeZone: 'UTC' });
 ---
 
 <BaseLayout title={entry.data.title} description={entry.data.summary}>
@@ -35,6 +36,8 @@ const stations = (await Promise.all(entry.data.stations.map((station) => getEntr
         <div><dt>Stable ID</dt><dd>{entry.id}</dd></div>
         <div><dt>Region</dt><dd>{region?.data.title ?? 'Not provided'}</dd></div>
         <div><dt>Period</dt><dd>{entry.data.period ?? 'Not provided'}</dd></div>
+        {entry.data.startDate && <div><dt>Start date</dt><dd><time datetime={entry.data.startDate.toISOString().slice(0, 10)}>{formatDate.format(entry.data.startDate)}</time></dd></div>}
+        {entry.data.endDate && <div><dt>End date</dt><dd><time datetime={entry.data.endDate.toISOString().slice(0, 10)}>{formatDate.format(entry.data.endDate)}</time></dd></div>}
         <div><dt>Survey type</dt><dd>{entry.data.surveyType}</dd></div>
         <div><dt>Published stations</dt><dd>{stations.length}</dd></div>
       </dl>

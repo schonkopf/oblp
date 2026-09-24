@@ -2,14 +2,16 @@
 import { getCollection, getEntry } from 'astro:content';
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import ArrowLink from '../../components/ArrowLink.astro';
+import ObservationHistory from '../../components/ObservationHistory.astro';
 import { stationUrl, surveyUrl, withBase } from '../../utils/urls';
 
 const stations = await getCollection('stations', ({ data }) => data.status === 'published' && !data.demo);
 const surveys = await getCollection('surveys', ({ data }) => data.status === 'published' && !data.demo);
-const timelineStations = stations
-  .filter(({ data }) => data.monitoringSince)
-  .sort((a, b) => a.data.monitoringSince!.getTime() - b.data.monitoringSince!.getTime());
 const regions = new Map((await getCollection('regions')).map((region) => [region.id, region.data.title]));
+const historyObservations = [
+  ...stations.filter(({ data }) => data.monitoringSince).map(({ id, data }) => ({ id, title: data.title, kind: 'station' as const, region: regions.get(data.region.id) ?? 'Not specified', startDate: data.monitoringSince!, url: stationUrl(id) })),
+  ...surveys.filter(({ data }) => data.startDate).map(({ id, data }) => ({ id, title: data.title, kind: 'survey' as const, region: regions.get(data.region.id) ?? 'Not specified', startDate: data.startDate!, url: surveyUrl(id) })),
+];
 const records = [
   ...stations.map((entry) => ({ id: entry.id, title: entry.data.title, summary: entry.data.summary, kind: 'station', subtype: entry.data.stationType, observations: entry.data.observationTypes, ecosystem: entry.data.ecosystem ?? entry.data.habitat ?? 'Not specified', region: regions.get(entry.data.region.id) ?? 'Not specified', url: stationUrl(entry.id), geometry: entry.data.coordinates ? { type: 'Point', coordinates: [entry.data.coordinates.longitude, entry.data.coordinates.latitude] } : null })),
   ...surveys.map((entry) => ({ id: entry.id, title: entry.data.title, summary: entry.data.summary, kind: 'survey', subtype: entry.data.surveyType, observations: entry.data.observationTypes, ecosystem: entry.data.ecosystem ?? 'Not specified', region: regions.get(entry.data.region.id) ?? 'Not specified', url: surveyUrl(entry.id), geometry: entry.data.polygon ? { type: 'Polygon', coordinates: [[...entry.data.polygon, entry.data.polygon[0]]] } : null })),
@@ -32,16 +34,7 @@ if (!page || page.data.pageType !== 'explore') throw new Error('Missing or inval
       </figure>
     </div>
   </section>
-  {timelineStations.length > 0 && <section class="observation-timeline shell" aria-labelledby="timeline-heading">
-    <p class="eyebrow">Observation timeline</p>
-    <h2 id="timeline-heading" class="visually-hidden">Observation timeline</h2>
-    <ol>
-      {timelineStations.map(({ id, data }) => <li>
-        <time datetime={data.monitoringSince!.toISOString().slice(0, 10)}>{data.monitoringSince!.getUTCFullYear()}</time>
-        <a href={stationUrl(id)}>{data.title}</a>
-      </li>)}
-    </ol>
-  </section>}
+  {historyObservations.length > 0 && <ObservationHistory observations={historyObservations} />}
   <section class="listing shell explorer" data-explorer>
     <h2 class="visually-hidden">Observation directory</h2>
     <div id="network-map" class="map" aria-label="Map of monitoring stations and survey areas"></div>

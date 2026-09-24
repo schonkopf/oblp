@@ -70,6 +70,8 @@ const surveys = defineCollection({
     stations: z.array(reference('stations')).default([]),
     surveyType: z.enum(['spatial', 'temporal', 'experimental']),
     period: z.string().optional(),
+    startDate: z.coerce.date().optional(),
+    endDate: z.coerce.date().optional(),
     observationTypes: z.array(observationType).default(['soundscape']),
     ecosystem: z.string().optional(),
     polygon: z.array(z.tuple([z.number(), z.number()])).min(3).optional(),

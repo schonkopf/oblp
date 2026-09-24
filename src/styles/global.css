@@ -155,11 +155,6 @@ nav a:hover, nav a[aria-current='page'] { color: var(--color-ocean-900); box-sha
 .explore-hero__image { margin: 0; }
 .explore-hero__image img { width: 100%; height: clamp(20rem,40vw,34rem); object-fit: cover; }
 .explore-hero__image figcaption,.station-field-image figcaption { padding-top: .65rem; color: #a9c6ca; font-size: .75rem; }
-.observation-timeline { padding-block: var(--space-7); border-bottom: 1px solid var(--color-line); }
-.observation-timeline ol { display: grid; grid-template-columns: repeat(auto-fit,minmax(13rem,1fr)); margin: var(--space-5) 0 0; padding: 0; border-top: 1px solid var(--color-ocean-900); list-style: none; }
-.observation-timeline li { display: grid; gap: .6rem; padding: var(--space-4); border-bottom: 1px solid var(--color-line); border-left: 1px solid var(--color-line); }
-.observation-timeline time { color: var(--color-teal-600); font-family: var(--font-serif); font-size: 2rem; }
-.observation-timeline a { font-weight: 700; }
 .explore-controls { display: grid; grid-template-columns: 2fr repeat(3,1fr) auto; gap: .75rem; align-items: end; padding-block: var(--space-4); border-block: 1px solid var(--color-line); }
 .explore-controls label { display: grid; gap: .35rem; color: var(--color-muted); font-size: .7rem; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; }
 .explore-controls input,.explore-controls select { width: 100%; min-height: 2.8rem; padding: .6rem .7rem; border: 1px solid #aebfc2; border-radius: 0; color: var(--color-ink); background: #fff; font: inherit; text-transform: none; letter-spacing: 0; }
