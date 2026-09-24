@@ -15,18 +15,19 @@ const mediaUrl = (src: string) => /^(?:[a-z]+:)?\/\//i.test(src) || src.startsWi
 const fundingPeriod = (startYear: number, endYear?: number) => endYear && endYear !== startYear ? `${startYear}–${endYear}` : String(startYear);
 ---
 <BaseLayout title={page.data.title} description={page.data.description}>
-  <PageIntro eyebrow={page.data.eyebrow} title={page.data.heroTitle} description={page.data.heroText} />
+  <PageIntro eyebrow={page.data.eyebrow} title={page.data.heroTitle} />
 
   <section class="section shell" aria-labelledby="team-heading">
-    <div class="section-heading split-heading"><div><p class="eyebrow">{page.data.team.eyebrow}</p><h2 id="team-heading">{page.data.team.title}</h2></div><p>{page.data.team.text}</p></div>
+    <div class="section-heading"><p class="eyebrow">{page.data.team.eyebrow}</p><h2 id="team-heading">{page.data.team.title}</h2></div>
     <div class="people-grid">{people.map(({ data }) => <article class:list={['person-card', { 'person-card--with-portrait': data.portrait }]}>
       {data.portrait && <img class="person-portrait" src={mediaUrl(data.portrait.src)} alt={data.portrait.alt} loading="lazy" />}
       <div><h3>{data.profileUrl ? <a href={data.profileUrl} target="_blank" rel="noopener">{data.name} <span aria-hidden="true">↗</span></a> : data.name}</h3><p class="role">{data.role}</p>{data.affiliation && <p>{data.affiliation}</p>}</div>
     </article>)}</div>
+    <div class="section-action"><a class="arrow-link" href={page.data.team.action.href} target="_blank" rel="noopener">{page.data.team.action.label} <span aria-hidden="true">→</span></a></div>
   </section>
 
   <section class="section section-dark" aria-labelledby="partners-heading"><div class="shell">
-    <div class="section-heading split-heading"><div><p class="eyebrow">{page.data.partners.eyebrow}</p><h2 id="partners-heading">{page.data.partners.title}</h2></div><p>{page.data.partners.text}</p></div>
+    <div class="section-heading"><p class="eyebrow">{page.data.partners.eyebrow}</p><h2 id="partners-heading">{page.data.partners.title}</h2></div>
     <div class="partner-list">{internationalPartners.map(({ data }) => <article class:list={{ 'partner-with-logo': data.logo }}>
       {data.logo && <img class="partner-logo" src={mediaUrl(data.logo.src)} alt={data.logo.alt} loading="lazy" />}
       <div><p class="card-type">{data.country ?? (data.partnerType === 'network' ? 'International network' : data.partnerType)}</p><h3>{data.url ? <a href={data.url} target="_blank" rel="noopener">{data.name} <span aria-hidden="true">↗</span></a> : data.name}</h3><p>{data.collaborationFocus ?? data.summary}</p></div>
@@ -34,13 +35,13 @@ const fundingPeriod = (startYear: number, endYear?: number) => endYear && endYea
   </div></section>
 
   <section class="section shell" id="collaborate" aria-labelledby="opportunities-heading">
-    <div class="section-heading split-heading"><div><p class="eyebrow">{page.data.opportunities.eyebrow}</p><h2 id="opportunities-heading">{page.data.opportunities.title}</h2></div><p>{page.data.opportunities.text}</p></div>
+    <div class="section-heading"><p class="eyebrow">{page.data.opportunities.eyebrow}</p><h2 id="opportunities-heading">{page.data.opportunities.title}</h2></div>
     <ol class="opportunity-list">{page.data.opportunities.items.map((item, index) => <li><span>{String(index + 1).padStart(2, '0')}</span><div><h3>{item.title}</h3><p>{item.text}</p></div></li>)}</ol>
     <div class="collaboration-contact"><p>{page.data.contact.title}</p><a class="arrow-link" href={page.data.contact.action.href}>{page.data.contact.action.label} <span aria-hidden="true">→</span></a></div>
   </section>
 
   <section class="section section-tint" aria-labelledby="funding-heading"><div class="shell funding-layout">
-    <div class="section-heading"><p class="eyebrow">{page.data.funding.eyebrow}</p><h2 id="funding-heading">{page.data.funding.title}</h2><p class="lede">{page.data.funding.text}</p></div>
+    <div class="section-heading"><p class="eyebrow">{page.data.funding.eyebrow}</p><h2 id="funding-heading">{page.data.funding.title}</h2></div>
     <div class="funding-records">{fundedProjects.map(({ record, agency }) => agency && <article>
       <p class="funding-period">{fundingPeriod(record.data.startYear, record.data.endYear)}</p>
       <div>

@@ -143,6 +143,7 @@ nav a:hover, nav a[aria-current='page'] { color: var(--color-ocean-900); box-sha
 /* Interior page foundations */
 .page-intro { padding-block: clamp(5rem, 10vw, 8rem); border-bottom: 1px solid var(--color-line); }
 .page-intro h1 { margin-bottom: var(--space-4); }
+.page-intro h1:last-child { margin-bottom: 0; }
 .page-bridge { display: grid; grid-template-columns: 10rem .8fr 1.2fr; gap: var(--space-5); padding-block: var(--space-6); border-bottom: 1px solid var(--color-line); }
 .page-bridge h2 { font-size: 2rem; }.page-bridge > p:last-child { max-width: 42rem; color: var(--color-muted); }
 .listing { padding-block: var(--space-7) var(--space-8); }
@@ -180,6 +181,7 @@ nav a:hover, nav a[aria-current='page'] { color: var(--color-ocean-900); box-sha
 .person-card:nth-child(odd) { border-right: 1px solid var(--color-line); }
 .person-portrait { width: 5rem; aspect-ratio: 1; border-radius: 50%; object-fit: cover; }
 .person-card h3 { margin-bottom: .25rem; overflow-wrap: anywhere; }.person-card p { margin-bottom: .3rem; color: var(--color-muted); }.person-card .role { color: var(--color-teal-600); font-weight: 700; }
+.section-action { margin-top: var(--space-4); text-align: right; }
 .partner-list { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); border-top: 1px solid rgba(255,255,255,.25); }
 .partner-list article { min-width: 0; padding: var(--space-5); border-right: 1px solid rgba(255,255,255,.18); border-bottom: 1px solid rgba(255,255,255,.18); }
 .partner-list .partner-with-logo { display: grid; grid-template-columns: 5rem minmax(0,1fr); gap: var(--space-4); }

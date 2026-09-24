@@ -197,6 +197,7 @@ const editorialSection = z.object({
   title: z.string().min(1),
   text: z.string().min(1),
 });
+const aboutSection = editorialSection.omit({ text: true });
 const pageBase = z.object({
   title: z.string().min(1),
   description: z.string().min(1),
@@ -240,15 +241,15 @@ const pages = defineCollection({
         tutorial: z.string().min(1),
       }),
     }),
-    pageBase.extend({
+    pageBase.omit({ heroText: true }).extend({
       pageType: z.literal('about'),
-      team: editorialSection,
-      partners: editorialSection,
-      opportunities: editorialSection.extend({
+      team: aboutSection.extend({ action }),
+      partners: aboutSection,
+      opportunities: aboutSection.extend({
         items: z.array(z.object({ title: z.string().min(1), text: z.string().min(1) })).length(4),
       }),
       contact: z.object({ title: z.string().min(1), action: action }),
-      funding: editorialSection,
+      funding: aboutSection,
     }),
   ]),
 });
