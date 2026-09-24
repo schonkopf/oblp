@@ -4,9 +4,10 @@ import { withBase } from '../utils/urls';
 interface Props {
   src: string;
   title: string;
+  interactionHint?: string;
 }
 
-const { src, title } = Astro.props;
+const { src, title, interactionHint = 'Interact with the figure to explore the data.' } = Astro.props;
 const href = withBase(src);
 ---
 
@@ -17,7 +18,7 @@ const href = withBase(src);
     </iframe>
   </div>
   <figcaption>
-    <span>Interactive scientific visualization</span>
+    <span>{interactionHint}</span>
     <a href={href} target="_blank" rel="noopener">Open full-size <span aria-hidden="true">↗</span></a>
   </figcaption>
 </figure>

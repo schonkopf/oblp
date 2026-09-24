@@ -15,21 +15,23 @@ const { entry } = Astro.props;
 const { Content } = await render(entry);
 const region = await getEntry(entry.data.region);
 
-const [allSurveys, allAudio, allVisualizations, allResources, allFindings, allPublications] = await Promise.all([
+const [allSurveys, allAudio, allVisualizations, allResources, allFindings, allPublications, allPartners] = await Promise.all([
   getCollection('surveys', ({ data }) => data.status === 'published'),
   getCollection('audio', ({ data }) => data.status === 'published'),
   getCollection('visualizations', ({ data }) => data.status === 'published'),
   getCollection('resources', ({ data }) => data.status === 'published'),
   getCollection('findings', ({ data }) => data.status === 'published'),
   getCollection('publications', ({ data }) => data.status === 'published'),
+  getCollection('partners', ({ data }) => data.status === 'published'),
 ]);
 
 const surveys = allSurveys.filter(({ data }) => data.stations.some(({ id }) => id === entry.id));
 const audio = allAudio.filter(({ data }) => data.station?.id === entry.id);
 const visualizations = allVisualizations.filter(({ data }) => data.station?.id === entry.id);
-const resources = allResources.filter(({ data }) => data.stations.some(({ id }) => id === entry.id));
+const resources = allResources.filter(({ data }) => data.resourceType === 'dataset' && data.stations.some(({ id }) => id === entry.id));
 const findings = allFindings.filter(({ data }) => data.stations.some(({ id }) => id === entry.id));
 const publications = allPublications.filter(({ data }) => data.relatedStations.some(({ id }) => id === entry.id));
+const partners = allPartners.filter(({ id }) => entry.data.partners.some((reference) => reference.id === id));
 const spectrograms = visualizations.filter(({ data }) => data.visualizationType === 'long-term-spectrogram');
 const habitatVisualizations = visualizations.filter(({ data }) => data.visualizationType === 'photogrammetry');
 const otherVisualizations = visualizations.filter(({ data }) => !['long-term-spectrogram', 'photogrammetry'].includes(data.visualizationType));
@@ -62,7 +64,7 @@ const aboutText = entry.data.description;
     {entry.data.demo && <DemoNotice />}
     <div class="station-section__heading">
       <p class="eyebrow">Field context</p>
-      <h2 id="about-heading">About this station</h2>
+      <h2 id="about-heading" class="visually-hidden">Field context</h2>
     </div>
     <div class="station-about">
       <div class="station-narrative">
@@ -80,10 +82,14 @@ const aboutText = entry.data.description;
         {entry.data.methods.length > 0 && <div><dt>Methods</dt><dd>{entry.data.methods.join(' · ')}</dd></div>}
       </dl>
     </div>
+    {entry.data.media && <figure class="station-field-image">
+      <img src={withBase(entry.data.media.src)} alt={entry.data.media.alt} loading="lazy" />
+      {(entry.data.media.caption || entry.data.media.credit) && <figcaption>{entry.data.media.caption}{entry.data.media.caption && entry.data.media.credit && ' '}{entry.data.media.credit && <span>Credit: {entry.data.media.credit}</span>}</figcaption>}
+    </figure>}
   </section>
 
   {audio.length > 0 && <section class="station-section station-section--tint" aria-labelledby="listen-heading"><div class="shell">
-    <div class="station-section__heading"><p class="eyebrow">Acoustic observations</p><h2 id="listen-heading">Listen</h2></div>
+    <div class="station-section__heading"><p class="eyebrow">Example audio</p><h2 id="listen-heading" class="visually-hidden">Example audio</h2></div>
     <div class="audio-list">
       {audio.map(({ data }) => <article class="audio-observation">
         <div><p class="record-kicker">{data.audioType ? formatTerm(data.audioType) : 'Audio observation'}</p><h3>{data.title}</h3><p>{data.recordingContext ?? data.summary}</p></div>
@@ -96,7 +102,7 @@ const aboutText = entry.data.description;
   </div></section>}
 
   {spectrograms.length > 0 && <section class="station-section station-media-section" aria-labelledby="soundscape-heading"><div class="shell">
-    <div class="station-section__heading station-section__heading--wide"><p class="eyebrow">Temporal observation</p><h2 id="soundscape-heading">Soundscape through time</h2></div>
+    <div class="station-section__heading station-section__heading--wide"><p class="eyebrow">Temporal observation</p><h2 id="soundscape-heading" class="visually-hidden">Temporal observation</h2></div>
     {spectrograms.map(({ data }) => <article class="visualization-record">
       <div class="visualization-intro"><div><h3>{data.title}</h3><p>{data.description ?? data.summary}</p></div>{data.interpretation && <aside><h4>Interpretation</h4><p>{data.interpretation}</p></aside>}</div>
       {data.src && data.format === 'interactive-html' && <InteractiveEmbed src={data.src} title={data.title} />}
@@ -104,12 +110,12 @@ const aboutText = entry.data.description;
   </div></section>}
 
   {habitatVisualizations.length > 0 && <section class="station-section station-section--dark station-media-section" aria-labelledby="habitat-heading"><div class="shell">
-    <div class="station-section__heading station-section__heading--wide"><p class="eyebrow">Spatial context</p><h2 id="habitat-heading">Explore the habitat</h2></div>
+    <div class="station-section__heading station-section__heading--wide"><p class="eyebrow">Explore the habitat</p><h2 id="habitat-heading" class="visually-hidden">Explore the habitat</h2></div>
     {habitatVisualizations.map(({ data }) => <article class="visualization-record"><div class="visualization-intro"><div><h3>{data.title}</h3><p>{data.description ?? data.summary}</p></div>{data.interpretation && <aside><h4>Interpretation</h4><p>{data.interpretation}</p></aside>}</div>{data.src && data.format === 'interactive-html' && <InteractiveEmbed src={data.src} title={data.title} />}</article>)}
   </div></section>}
 
   {resources.length > 0 && <section class="station-section shell" aria-labelledby="data-heading">
-    <div class="station-section__heading"><p class="eyebrow">Open science</p><h2 id="data-heading">Data &amp; access</h2></div>
+    <div class="station-section__heading"><p class="eyebrow">Associated datasets</p><h2 id="data-heading" class="visually-hidden">Associated datasets</h2></div>
     <div class="station-resource-list">{resources.map(({ data }) => <article><div><p class="record-kicker">{formatTerm(data.resourceType)}{data.repository && ` · ${data.repository}`}</p><h3>{data.title}</h3><p>{data.description ?? data.summary}</p></div>{data.url && <a class="button" href={data.url} target="_blank" rel="noopener">Access on {data.repository ?? 'external site'} <span aria-hidden="true">↗</span></a>}</article>)}</div>
   </section>}
 
@@ -121,5 +127,13 @@ const aboutText = entry.data.description;
       {publications.map(({ data }) => <article><p class="record-kicker">Publication · {data.year}</p><h3>{data.url || data.doi ? <a href={data.url ?? data.doi} target="_blank" rel="noopener">{data.title} <span aria-hidden="true">↗</span></a> : data.title}</h3><p>{data.authors.join(', ')}</p></article>)}
       {otherVisualizations.map(({ data }) => <article><p class="record-kicker">Visualization</p><h3>{data.title}</h3><p>{data.description ?? data.summary}</p></article>)}
     </div>
+  </div></section>}
+  {partners.length > 0 && <section class="station-section station-section--dark" aria-labelledby="partners-heading"><div class="shell">
+    <div class="station-section__heading"><p class="eyebrow">Partners</p><h2 id="partners-heading" class="visually-hidden">Partners</h2></div>
+    <div class="partner-list">{partners.map(({ data }) => <article>
+      <p class="card-type">{formatTerm(data.partnerType)}</p>
+      <h3>{data.url ? <a href={data.url} target="_blank" rel="noopener">{data.name} <span aria-hidden="true">↗</span></a> : data.name}</h3>
+      <p>{data.summary}</p>
+    </article>)}</div>
   </div></section>}
 </BaseLayout>
