@@ -3,29 +3,48 @@ import { getCollection, getEntry } from 'astro:content';
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import PageIntro from '../../components/PageIntro.astro';
 import DemoNotice from '../../components/DemoNotice.astro';
+import { withBase } from '../../utils/urls';
 
 const page = await getEntry('pages', 'about');
 if (!page || page.data.pageType !== 'about') throw new Error('Missing or invalid pages/about content entry.');
-const people = await getCollection('people', ({ data }) => data.status === 'published');
+const people = (await getCollection('people', ({ data }) => data.status === 'published' && data.teamMembership === 'current')).sort((a, b) => a.data.name.localeCompare(b.data.name));
 const allPartners = await getCollection('partners', ({ data }) => data.status === 'published');
-const partners = allPartners.filter((item) => item.data.partnerType !== 'funder');
-const funders = allPartners.filter((item) => item.data.partnerType === 'funder');
+const internationalPartners = allPartners.filter(({ data }) => ['research', 'infrastructure', 'community'].includes(data.partnerType)).sort((a, b) => a.data.name.localeCompare(b.data.name));
+const funders = allPartners.filter(({ data }) => data.partnerType === 'funder').sort((a, b) => a.data.name.localeCompare(b.data.name));
+const mediaUrl = (src: string) => /^(?:[a-z]+:)?\/\//i.test(src) || src.startsWith('data:') ? src : withBase(src);
 ---
 <BaseLayout title={page.data.title} description={page.data.description}>
   <PageIntro eyebrow={page.data.eyebrow} title={page.data.heroTitle} description={page.data.heroText} />
 
-  <section class="section shell about-purpose">
-    <div><p class="eyebrow">{page.data.purpose.eyebrow}</p><h2>{page.data.purpose.title}</h2></div>
-    <div><p>{page.data.purpose.text}</p><p>{page.data.purpose.supportingText}</p></div>
+  <section class="section shell" aria-labelledby="team-heading">
+    <div class="section-heading split-heading"><div><p class="eyebrow">{page.data.team.eyebrow}</p><h2 id="team-heading">{page.data.team.title}</h2></div><p>{page.data.team.text}</p></div>
+    {people.some(({ data }) => data.demo) && <DemoNotice />}
+    <div class="people-grid">{people.map(({ data }) => <article class:list={['person-card', { 'person-card--with-portrait': data.portrait }]}>
+      {data.portrait && <img class="person-portrait" src={mediaUrl(data.portrait.src)} alt={data.portrait.alt} loading="lazy" />}
+      <div><h3>{data.profileUrl ? <a href={data.profileUrl} target="_blank" rel="noopener">{data.name} <span aria-hidden="true">↗</span></a> : data.name}</h3><p class="role">{data.role}</p>{data.affiliation && <p>{data.affiliation}</p>}</div>
+    </article>)}</div>
   </section>
 
-  <section class="section section-tint"><div class="shell"><div class="section-heading split-heading"><div><p class="eyebrow">{page.data.capabilitiesIntro.eyebrow}</p><h2>{page.data.capabilitiesIntro.title}</h2></div><p>{page.data.capabilitiesIntro.text}</p></div><ol class="capability-list">{page.data.capabilities.map((item, index) => <li><span>{String(index + 1).padStart(2, '0')}</span><h3>{item.title}</h3><p>{item.text}</p></li>)}</ol></div></section>
+  <section class="section section-dark" aria-labelledby="partners-heading"><div class="shell">
+    <div class="section-heading split-heading"><div><p class="eyebrow">{page.data.partners.eyebrow}</p><h2 id="partners-heading">{page.data.partners.title}</h2></div><p>{page.data.partners.text}</p></div>
+    {internationalPartners.some(({ data }) => data.demo) && <DemoNotice />}
+    <div class="partner-list">{internationalPartners.map(({ data }) => <article class:list={{ 'partner-with-logo': data.logo }}>
+      {data.logo && <img class="partner-logo" src={mediaUrl(data.logo.src)} alt={data.logo.alt} loading="lazy" />}
+      <div><p class="card-type">{data.partnerType}{data.country && <> · {data.country}</>}</p><h3>{data.url ? <a href={data.url} target="_blank" rel="noopener">{data.name} <span aria-hidden="true">↗</span></a> : data.name}</h3><p>{data.collaborationFocus ?? data.summary}</p></div>
+    </article>)}</div>
+  </div></section>
 
-  <section class="section shell"><div class="section-heading"><p class="eyebrow">Research team</p><h2>People behind the listening.</h2></div><DemoNotice /><div class="people-grid">{people.map((person) => <article class="person-card"><div class="portrait-placeholder" aria-hidden="true">{person.data.name.split(' ').map((part) => part[0]).join('')}</div><div><h3>{person.data.name}</h3><p class="role">{person.data.role}</p><p>{person.data.affiliation ?? 'Affiliation not provided'}</p>{person.data.profileUrl && <a href={person.data.profileUrl}>View profile</a>}</div></article>)}</div></section>
+  <section class="section shell" id="collaborate" aria-labelledby="opportunities-heading">
+    <div class="section-heading split-heading"><div><p class="eyebrow">{page.data.opportunities.eyebrow}</p><h2 id="opportunities-heading">{page.data.opportunities.title}</h2></div><p>{page.data.opportunities.text}</p></div>
+    <ol class="opportunity-list">{page.data.opportunities.items.map((item, index) => <li><span>{String(index + 1).padStart(2, '0')}</span><div><h3>{item.title}</h3><p>{item.text}</p></div></li>)}</ol>
+    <div class="collaboration-contact"><p>{page.data.contact.title}</p><a class="arrow-link" href={page.data.contact.action.href}>{page.data.contact.action.label} <span aria-hidden="true">→</span></a></div>
+  </section>
 
-  <section class="section section-dark"><div class="shell"><div class="section-heading split-heading"><div><p class="eyebrow">International partners</p><h2>A network shaped by many places.</h2></div><p>Organizational records remain distinct from page copy and can be reused wherever the collaboration network is represented.</p></div><DemoNotice /><div class="partner-list">{partners.map((partner) => <article><p class="card-type">{partner.data.partnerType}</p><h3>{partner.data.name}</h3><p>{partner.data.summary}</p>{partner.data.url && <a href={partner.data.url}>Visit partner ↗</a>}</article>)}</div></div></section>
-
-  <section class="section shell" id="collaborate"><div class="section-heading split-heading"><div><p class="eyebrow">{page.data.opportunities.eyebrow}</p><h2>{page.data.opportunities.title}</h2></div><p>{page.data.opportunities.text}</p></div><div class="opportunity-list">{page.data.opportunities.items.map((item, index) => <article><span>{String(index + 1).padStart(2, '0')}</span><h3>{item.title}</h3><p>{item.text}</p></article>)}</div></section>
-
-  <section class="section section-tint"><div class="shell about-bottom"><div><p class="eyebrow">Funding & sponsors</p><h2>Support for shared infrastructure.</h2><DemoNotice /><div class="funders">{funders.map((funder) => <article><h3>{funder.data.name}</h3><p>{funder.data.summary}</p></article>)}</div></div><aside class="contact-panel"><p class="eyebrow">Contact</p><h2>{page.data.contact.title}</h2><p>{page.data.contact.text}</p><a class="button light" href={page.data.contact.action.href}>{page.data.contact.action.label}</a></aside></div></section>
+  <section class="section section-tint" aria-labelledby="funding-heading"><div class="shell funding-layout">
+    <div class="section-heading"><p class="eyebrow">{page.data.funding.eyebrow}</p><h2 id="funding-heading">{page.data.funding.title}</h2><p class="lede">{page.data.funding.text}</p></div>
+    <div>{funders.some(({ data }) => data.demo) && <DemoNotice />}<div class="funders">{funders.map(({ data }) => <article class:list={{ 'funder-with-logo': data.logo }}>
+      {data.logo && <img class="funder-logo" src={mediaUrl(data.logo.src)} alt={data.logo.alt} loading="lazy" />}
+      <div><h3>{data.url ? <a href={data.url} target="_blank" rel="noopener">{data.name} <span aria-hidden="true">↗</span></a> : data.name}</h3><p>{data.collaborationFocus ?? data.summary}</p></div>
+    </article>)}</div></div>
+  </div></section>
 </BaseLayout>

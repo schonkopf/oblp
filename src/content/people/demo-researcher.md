@@ -6,6 +6,7 @@ demo: true
 name: "Demo Researcher"
 role: "Demonstration role"
 affiliation: "Demonstration affiliation"
+teamMembership: current
 updated: 2026-09-22
 ---
 

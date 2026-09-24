@@ -162,6 +162,7 @@ const people = defineCollection({
     affiliation: z.string().optional(),
     profileUrl: z.url().optional(),
     portrait: mediaAsset.optional(),
+    teamMembership: z.enum(['current', 'former']).optional(),
   }),
 });
 
@@ -172,6 +173,8 @@ const partners = defineCollection({
     partnerType: z.enum(['research', 'community', 'infrastructure', 'funder', 'other']),
     url: z.url().optional(),
     logo: mediaAsset.optional(),
+    country: z.string().min(1).optional(),
+    collaborationFocus: z.string().min(1).optional(),
   }),
 });
 
@@ -226,13 +229,13 @@ const pages = defineCollection({
     }),
     pageBase.extend({
       pageType: z.literal('about'),
-      purpose: editorialSection.extend({ supportingText: z.string().min(1) }),
-      capabilitiesIntro: editorialSection,
-      capabilities: z.array(z.object({ title: z.string().min(1), text: z.string().min(1) })).min(2).max(4),
+      team: editorialSection,
+      partners: editorialSection,
       opportunities: editorialSection.extend({
-        items: z.array(z.object({ title: z.string().min(1), text: z.string().min(1) })).min(2).max(4),
+        items: z.array(z.object({ title: z.string().min(1), text: z.string().min(1) })).length(4),
       }),
-      contact: z.object({ title: z.string().min(1), text: z.string().min(1), action: action }),
+      contact: z.object({ title: z.string().min(1), action: action }),
+      funding: editorialSection,
     }),
   ]),
 });
