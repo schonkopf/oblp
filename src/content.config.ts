@@ -59,6 +59,7 @@ const stations = defineCollection({
     heightAboveSeafloorM: z.number().nonnegative().optional(),
     methods: z.array(z.string()).default([]),
     media: mediaAsset.optional(),
+    partners: z.array(reference('partners')).default([]),
   }),
 });
 
@@ -200,10 +201,9 @@ const pages = defineCollection({
       findings: editorialSection.extend({ actionLabel: z.string().min(1) }),
       collaboration: editorialSection.extend({ action: action }),
     }),
-    pageBase.extend({
+    pageBase.omit({ heroText: true }).extend({
       pageType: z.literal('explore'),
-      introduction: z.string().min(1),
-      directoryTitle: z.string().min(1),
+      heroImage: mediaAsset,
     }),
     pageBase.extend({
       pageType: z.literal('research'),

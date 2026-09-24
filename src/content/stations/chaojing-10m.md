@@ -31,4 +31,8 @@ heightAboveSeafloorM: 0.2
 monitoringSince: 2021-05-19
 operationalStatus: operational
 updated: 2026-09-24
+media:
+  src: "assets/images/stations/chaojing-10m/Header.jpg"
+  alt: "Rocky coastal habitat at the Chaojing monitoring station in northern Taiwan"
+  caption: "Field context for the Chaojing 10 m monitoring station."
 ---

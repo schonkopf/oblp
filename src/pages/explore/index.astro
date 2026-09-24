@@ -1,13 +1,14 @@
 ---
 import { getCollection, getEntry } from 'astro:content';
 import BaseLayout from '../../layouts/BaseLayout.astro';
-import PageIntro from '../../components/PageIntro.astro';
-import DemoNotice from '../../components/DemoNotice.astro';
 import ArrowLink from '../../components/ArrowLink.astro';
 import { stationUrl, surveyUrl, withBase } from '../../utils/urls';
 
-const stations = await getCollection('stations', ({ data }) => data.status === 'published');
-const surveys = await getCollection('surveys', ({ data }) => data.status === 'published');
+const stations = await getCollection('stations', ({ data }) => data.status === 'published' && !data.demo);
+const surveys = await getCollection('surveys', ({ data }) => data.status === 'published' && !data.demo);
+const timelineStations = stations
+  .filter(({ data }) => data.monitoringSince)
+  .sort((a, b) => a.data.monitoringSince!.getTime() - b.data.monitoringSince!.getTime());
 const regions = new Map((await getCollection('regions')).map((region) => [region.id, region.data.title]));
 const records = [
   ...stations.map((entry) => ({ id: entry.id, title: entry.data.title, summary: entry.data.summary, kind: 'station', subtype: entry.data.stationType, observations: entry.data.observationTypes, ecosystem: entry.data.ecosystem ?? entry.data.habitat ?? 'Not specified', region: regions.get(entry.data.region.id) ?? 'Not specified', url: stationUrl(entry.id), geometry: entry.data.coordinates ? { type: 'Point', coordinates: [entry.data.coordinates.longitude, entry.data.coordinates.latitude] } : null })),
@@ -22,10 +23,28 @@ if (!page || page.data.pageType !== 'explore') throw new Error('Missing or inval
 ---
 <BaseLayout title={page.data.title} description={page.data.description}>
   <Fragment slot="head"><link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" /></Fragment>
-  <PageIntro eyebrow={page.data.eyebrow} title={page.data.heroTitle} description={page.data.heroText} />
-  <section class="page-bridge shell"><p class="eyebrow">Directory context</p><h2>{page.data.directoryTitle}</h2><p>{page.data.introduction}</p></section>
+  <section class="explore-hero">
+    <div class="shell explore-hero__layout">
+      <div><p class="eyebrow">{page.data.eyebrow}</p><h1>{page.data.heroTitle}</h1></div>
+      <figure class="explore-hero__image">
+        <img src={withBase(page.data.heroImage.src)} alt={page.data.heroImage.alt} width="2048" height="1365" fetchpriority="high" />
+        {(page.data.heroImage.caption || page.data.heroImage.credit) && <figcaption>{page.data.heroImage.caption}{page.data.heroImage.caption && page.data.heroImage.credit && ' '}{page.data.heroImage.credit && <span>Credit: {page.data.heroImage.credit}</span>}</figcaption>}
+      </figure>
+    </div>
+  </section>
+  {timelineStations.length > 0 && <section class="observation-timeline shell" aria-labelledby="timeline-heading">
+    <p class="eyebrow">Observation timeline</p>
+    <h2 id="timeline-heading" class="visually-hidden">Observation timeline</h2>
+    <ol>
+      {timelineStations.map(({ id, data }) => <li>
+        <time datetime={data.monitoringSince!.toISOString().slice(0, 10)}>{data.monitoringSince!.getUTCFullYear()}</time>
+        <a href={stationUrl(id)}>{data.title}</a>
+      </li>)}
+    </ol>
+  </section>}
   <section class="listing shell explorer" data-explorer>
-    <DemoNotice />
+    <h2 class="visually-hidden">Observation directory</h2>
+    <div id="network-map" class="map" aria-label="Map of monitoring stations and survey areas"></div>
     <div class="explore-controls" aria-label="Filter observation records">
       <label class="search-field"><span>Search locations</span><input type="search" name="query" placeholder="Search by title, place, or method" /></label>
       <label><span>Observation</span><select name="observation"><option value="">All types</option>{observationTypes.map((value) => <option value={value}>{formatObservation(value)}</option>)}</select></label>
@@ -34,17 +53,14 @@ if (!page || page.data.pageType !== 'explore') throw new Error('Missing or inval
       <button class="reset-button" type="button">Reset</button>
     </div>
     <p class="results-status" aria-live="polite">Showing {records.length} records</p>
-    <div class="directory-layout">
-      <div id="network-map" class="map" aria-label="Map of monitoring stations and survey areas"></div>
-      <div class="location-list">
-        {records.map((record) => <article class="location-card" data-record={JSON.stringify(record)}>
-          <div class="location-meta"><span>{record.kind === 'station' ? '●' : '▰'} {record.kind}</span><span>{record.region}</span></div>
-          <h2>{record.title}</h2><p>{record.summary}</p>
-          <ul class="mini-tags">{record.observations.map((value) => <li>{value}</li>)}<li>{record.ecosystem}</li></ul>
-          <ArrowLink href={record.url} label={`View ${record.kind}`} />
-        </article>)}
-        <p class="empty-state no-results" hidden>No records match these filters. Try broadening your search.</p>
-      </div>
+    <div class="location-list">
+      {records.map((record) => <article class="location-card" data-record={JSON.stringify(record)}>
+        <div class="location-meta"><span>{record.kind === 'station' ? '●' : '▰'} {record.kind}</span><span>{record.region}</span></div>
+        <h2>{record.title}</h2><p>{record.summary}</p>
+        <ul class="mini-tags">{record.observations.map((value) => <li>{value}</li>)}<li>{record.ecosystem}</li></ul>
+        <ArrowLink href={record.url} label={`View ${record.kind}`} />
+      </article>)}
+      <p class="empty-state no-results" hidden>No records match these filters. Try broadening your search.</p>
     </div>
   </section>
   <script is:inline define:vars={{ records, base: withBase() }}>
@@ -57,7 +73,7 @@ if (!page || page.data.pageType !== 'explore') throw new Error('Missing or inval
     const escapeHtml = (value) => String(value).replace(/[&<>'"]/g, (char) => ({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[char]));
     function initMap() {
       if (!window.L) return;
-      map = L.map('network-map', { scrollWheelZoom: false }).setView([43, -54], 3);
+      map = L.map('network-map', { scrollWheelZoom: true }).setView([43, -54], 3);
       L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 18, attribution: '&copy; OpenStreetMap contributors' }).addTo(map);
       layerGroup = L.featureGroup().addTo(map);
       update();
