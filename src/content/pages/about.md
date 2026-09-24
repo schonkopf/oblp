@@ -1,41 +1,38 @@
 ---
 title: "About & Collaborate"
 pageType: about
-description: "Meet the OBLP network and find ways to collaborate."
+description: "Meet the research team, international partners, and supporters behind OBLP, and find ways to connect observations with the network."
 eyebrow: "About & collaborate"
-heroTitle: "A shared practice of listening"
-heroText: "Listening to marine ecosystems across space and time."
-purpose:
-  eyebrow: "Project purpose"
-  title: "Built around connection."
-  text: "OBLP is a collaborative research framework for connecting passive acoustic observations with ecological context, reproducible analysis, and openly described evidence."
-  supportingText: "Stations, surveys, publications, and resources remain linked so the network can grow without losing the context that makes observations meaningful."
-capabilitiesIntro:
-  eyebrow: "Research capabilities"
-  title: "Work across the observation lifecycle."
-  text: "Field practice, analysis, and open infrastructure form one connected research process."
-capabilities:
-  - title: "Passive acoustic monitoring"
-    text: "Design comparable listening programmes across fixed stations, mobile platforms, and field campaigns."
-  - title: "Ecoacoustic analysis"
-    text: "Develop transparent workflows that connect acoustic signals with environmental and biological context."
-  - title: "Open research infrastructure"
-    text: "Publish reusable metadata, methods, and discovery tools built for distributed research networks."
+heroTitle: "The people and network behind OBLP"
+heroText: "A distributed scientific network coordinated in Taiwan and built through international collaboration."
+team:
+  eyebrow: "Research team"
+  title: "Coordinated by the Marine Ecoacoustics and Informatics Lab."
+  text: "Based within the Biodiversity Research Center at Academia Sinica, Taiwan, the team develops and coordinates OBLP observations, analysis, and research collaborations."
+partners:
+  eyebrow: "International partners"
+  title: "A network shaped across institutions and regions."
+  text: "Research, infrastructure, and community partners connect local expertise and observations with a shared international effort."
 opportunities:
   eyebrow: "Collaboration opportunities"
-  title: "Bring your perspective to the network."
-  text: "OBLP is designed for exchange among researchers, monitoring programmes, technical teams, and communities of practice."
+  title: "Connect your work with OBLP."
+  text: "OBLP brings compatible observations, ecological context, and methods into a connected research network."
   items:
-    - title: "Contribute observations"
-      text: "Connect compatible acoustic records and contextual measurements to a shared discovery layer."
-    - title: "Co-develop methods"
-      text: "Test workflows across ecosystems, instruments, and research questions with reproducibility in mind."
-    - title: "Host a listening node"
-      text: "Explore how a long-term station or time-bounded survey could join the network."
+    - title: "Connect an observation site"
+      text: "Contribute or coordinate long-term or spatial acoustic observations from marine ecosystems."
+    - title: "Connect ecological observations"
+      text: "Link soundscapes with eDNA, imagery, habitat surveys, Earth observation, or other ecological datasets."
+    - title: "Develop shared methods"
+      text: "Collaborate on ecoacoustic analysis, AI, sensors, visualization, interoperability, and open scientific workflows."
+    - title: "Build regional capacity"
+      text: "Develop coordinated monitoring, shared protocols, workshops, training, student exchange, and regional observation networks."
 contact:
-  title: "Start a conversation."
-  text: "Tell us about the location, observations, expertise, or question you would like to connect."
+  title: "Interested in connecting your observations with OBLP?"
   action:
-    label: "Email the project"
+    label: "Get in touch"
     href: "mailto:collaborate@example.org"
+funding:
+  eyebrow: "Funding & sponsors"
+  title: "Support for the network."
+  text: "Organizations that provide funding and support for OBLP are acknowledged here from the shared partner register."
 ---
