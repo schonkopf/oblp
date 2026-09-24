@@ -45,7 +45,7 @@ findings:
 collaboration:
   eyebrow: "International collaboration"
   title: "Building a shared practice of ocean listening"
-  text: "OBLP connects researchers, observation sites, technologies, and ecological knowledge across ocean regions. By sharing observations and analytical approaches while preserving local ecological context, we aim to understand patterns of marine ecosystem change that cannot be revealed by any single site alone."
+  text: "OBLP connects researchers, observation sites, and ecological knowledge. By sharing observations and analytical approaches, we aim to understand patterns of marine ecosystem change that cannot be revealed by any single site alone."
   action:
     label: "Explore ways to collaborate"
     href: "/about/#collaborate"
