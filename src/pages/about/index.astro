@@ -26,7 +26,7 @@ const mediaUrl = (src: string) => /^(?:[a-z]+:)?\/\//i.test(src) || src.startsWi
     </div>
   </section>
 
-  <section class="section section-dark" aria-labelledby="partners-heading"><div class="shell">
+  <section class="section partner-section" aria-labelledby="partners-heading"><div class="shell">
     <div class="section-heading"><p class="eyebrow">{page.data.partners.eyebrow}</p><h2 id="partners-heading">{page.data.partners.title}</h2></div>
     <div class="partner-list">{internationalPartners.map(({ data }) => <article class:list={{ 'partner-with-logo': data.logo }}>
       {data.logo && <img class="partner-logo" src={mediaUrl(data.logo.src)} alt={data.logo.alt} loading="lazy" />}

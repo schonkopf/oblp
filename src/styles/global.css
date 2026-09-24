@@ -181,6 +181,13 @@ nav a:hover, nav a[aria-current='page'] { color: var(--color-ocean-900); box-sha
 .team-composition { display: grid; grid-template-columns: minmax(0,1fr) auto; align-items: end; gap: var(--space-7); padding-block: var(--space-4); border-block: 1px solid var(--color-line); }
 .team-composition h2 { margin-bottom: 0; }
 .team-composition .arrow-link { margin-bottom: .5rem; white-space: nowrap; }
+.partner-section { color: var(--color-ink); background: var(--color-wash); }
+.partner-section .eyebrow,.partner-section .card-type { color: var(--color-teal-600) !important; }
+.partner-section h2,.partner-section h3,.partner-section h3 a { color: var(--color-ink); }
+.partner-section h3 a:hover,.partner-section h3 a:focus-visible { color: var(--color-teal-600); }
+.partner-section .partner-list { border-color: var(--color-line); }
+.partner-section .partner-list article { border-color: var(--color-line); }
+.partner-section .partner-list article > div > p:last-child { color: var(--color-muted); }
 .partner-list { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); border-top: 1px solid rgba(255,255,255,.25); }
 .partner-list article { min-width: 0; padding: var(--space-5); border-right: 1px solid rgba(255,255,255,.18); border-bottom: 1px solid rgba(255,255,255,.18); }
 .partner-list .partner-with-logo { display: grid; grid-template-columns: 5rem minmax(0,1fr); gap: var(--space-4); }
