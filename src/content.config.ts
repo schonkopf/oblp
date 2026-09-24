@@ -170,12 +170,25 @@ const partners = defineCollection({
   loader: collection('partners'),
   schema: common.extend({
     name: z.string().min(1),
-    partnerType: z.enum(['research', 'community', 'infrastructure', 'funder', 'other']),
+    partnerType: z.enum(['research', 'network', 'community', 'infrastructure', 'funder', 'other']),
     url: z.url().optional(),
     logo: mediaAsset.optional(),
     country: z.string().min(1).optional(),
     collaborationFocus: z.string().min(1).optional(),
   }),
+});
+
+const funding = defineCollection({
+  loader: collection('funding'),
+  schema: common.extend({
+    agency: reference('partners'),
+    programme: z.string().min(1).optional(),
+    projectTitle: z.string().min(1).optional(),
+    startYear: z.number().int().min(1900).max(2100),
+    endYear: z.number().int().min(1900).max(2100).optional(),
+    grantNumber: z.string().min(1).optional(),
+    url: z.url().optional(),
+  }).refine((item) => item.programme || item.projectTitle, 'Funding must include a programme or project title.'),
 });
 
 const action = z.object({ label: z.string().min(1), href: z.string().min(1) });
@@ -251,5 +264,6 @@ export const collections = {
   resources,
   people,
   partners,
+  funding,
   pages,
 };
