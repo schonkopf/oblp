@@ -7,14 +7,15 @@ status: published
 demo: false
 
 stationType: long-term
-region: "North Taiwan"
-ecosystem: "Subtropitcal reef"
-mpa: true
+region: north-taiwan
+ecosystem: "Subtropical reef"
+habitat: "Subtropical rocky reef with non-reefal coral communities"
+marineProtectedArea: true
 
 coordinates:
   latitude: 25.144
   longitude: 121.805
-depth: 10
+depthM: 10
 
 observationTypes:
   - soundscape
@@ -25,10 +26,9 @@ instrumentation:
   - "Soundtrap 300"
   - "Soundtrap 600"
   - "HOBO Pendant MX"
-deployment:
-  configuration: "Bottom-mounted"
-  heightAboveSeafloor: 0.2
+deploymentConfiguration: "Bottom-mounted"
+heightAboveSeafloorM: 0.2
 monitoringSince: 2021-05-19
-operational: true
+operationalStatus: operational
 updated: 2026-09-24
 ---

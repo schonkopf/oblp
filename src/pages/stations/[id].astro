@@ -2,7 +2,7 @@
 import { getCollection, getEntry, render, type CollectionEntry } from 'astro:content';
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import DemoNotice from '../../components/DemoNotice.astro';
-import ArrowLink from '../../components/ArrowLink.astro';
+import InteractiveEmbed from '../../components/InteractiveEmbed.astro';
 import { surveyUrl, withBase } from '../../utils/urls';
 
 export async function getStaticPaths() {
@@ -14,33 +14,112 @@ interface Props { entry: CollectionEntry<'stations'>; }
 const { entry } = Astro.props;
 const { Content } = await render(entry);
 const region = await getEntry(entry.data.region);
-const surveys = (await getCollection('surveys', ({ data }) => data.status === 'published')).filter((survey) => survey.data.stations.some((station) => station.id === entry.id));
-const audio = (await getCollection('audio', ({ data }) => data.status === 'published')).filter((item) => item.data.station?.id === entry.id);
+
+const [allSurveys, allAudio, allVisualizations, allResources, allFindings, allPublications] = await Promise.all([
+  getCollection('surveys', ({ data }) => data.status === 'published'),
+  getCollection('audio', ({ data }) => data.status === 'published'),
+  getCollection('visualizations', ({ data }) => data.status === 'published'),
+  getCollection('resources', ({ data }) => data.status === 'published'),
+  getCollection('findings', ({ data }) => data.status === 'published'),
+  getCollection('publications', ({ data }) => data.status === 'published'),
+]);
+
+const surveys = allSurveys.filter(({ data }) => data.stations.some(({ id }) => id === entry.id));
+const audio = allAudio.filter(({ data }) => data.station?.id === entry.id);
+const visualizations = allVisualizations.filter(({ data }) => data.station?.id === entry.id);
+const resources = allResources.filter(({ data }) => data.stations.some(({ id }) => id === entry.id));
+const findings = allFindings.filter(({ data }) => data.stations.some(({ id }) => id === entry.id));
+const publications = allPublications.filter(({ data }) => data.relatedStations.some(({ id }) => id === entry.id));
+const spectrograms = visualizations.filter(({ data }) => data.visualizationType === 'long-term-spectrogram');
+const habitatVisualizations = visualizations.filter(({ data }) => data.visualizationType === 'photogrammetry');
+const otherVisualizations = visualizations.filter(({ data }) => !['long-term-spectrogram', 'photogrammetry'].includes(data.visualizationType));
+const hasRelatedEvidence = surveys.length + findings.length + publications.length + otherVisualizations.length > 0;
+
+const formatDate = (date: Date) => new Intl.DateTimeFormat('en', { year: 'numeric', month: 'long', day: 'numeric', timeZone: 'UTC' }).format(date);
+const formatTerm = (value: string) => value === 'eDNA' ? value : value.replaceAll('-', ' ').replace(/\b\w/g, (letter) => letter.toUpperCase());
+const statusLabel = entry.data.operationalStatus ? formatTerm(entry.data.operationalStatus) : undefined;
+const aboutText = entry.data.description;
 ---
 
 <BaseLayout title={entry.data.title} description={entry.data.summary}>
-  <header class="detail-hero"><div class="shell"><p class="eyebrow">{entry.data.stationType} station</p><h1>{entry.data.title}</h1><p class="lede">{entry.data.summary}</p></div></header>
-  <div class="detail-grid shell">
-    <article class="detail-content">
-      {entry.data.demo && <DemoNotice />}
-      <div class="prose"><Content /></div>
-      <h2>Methods</h2>
-      {entry.data.methods.length ? <ul class="tag-list">{entry.data.methods.map((method) => <li>{method}</li>)}</ul> : <p class="empty-state">Methods have not been provided.</p>}
-      <h2>Connected records</h2>
-      {surveys.length ? <div class="record-list">{surveys.map((survey) => <article class="record"><p class="record-meta">Survey</p><div><h2>{survey.data.title}</h2><p>{survey.data.summary}</p></div><ArrowLink href={surveyUrl(survey.id)} label="Open" /></article>)}</div> : <p class="empty-state">No published surveys are connected to this station.</p>}
-      {audio.length > 0 && <p>{audio.length} published audio metadata record{audio.length === 1 ? '' : 's'} connected.</p>}
-      <p><ArrowLink href={withBase('explore/')} label="Back to explore" /></p>
-    </article>
-    <aside class="metadata" aria-label="Station metadata">
-      <p class="eyebrow">Station metadata</p>
-      <dl>
-        <div><dt>Stable ID</dt><dd>{entry.id}</dd></div>
-        <div><dt>Region</dt><dd>{region?.data.title ?? 'Not provided'}</dd></div>
-        <div><dt>Habitat</dt><dd>{entry.data.habitat ?? 'Not provided'}</dd></div>
-        <div><dt>Depth</dt><dd>{entry.data.depthM === undefined ? 'Not provided' : `${entry.data.depthM} m`}</dd></div>
-        <div><dt>Coordinates</dt><dd>{entry.data.coordinates ? `${entry.data.coordinates.latitude}, ${entry.data.coordinates.longitude}` : 'Not published'}</dd></div>
-        <div><dt>Monitoring</dt><dd>{entry.data.monitoringPeriod ?? 'Not provided'}</dd></div>
+  <header class="station-hero">
+    <div class="shell station-hero__layout">
+      <div>
+        <p class="eyebrow">{formatTerm(entry.data.stationType)} monitoring station</p>
+        <h1>{entry.data.title}</h1>
+        <p class="station-location">{region?.data.title}{entry.data.ecosystem && <> · {entry.data.ecosystem}</>}</p>
+        <p class="lede">{entry.data.summary}</p>
+      </div>
+      <dl class="station-vitals" aria-label="Key station facts">
+        {entry.data.depthM !== undefined && <div><dt>Observation depth</dt><dd>{entry.data.depthM} m</dd></div>}
+        {statusLabel && <div><dt>Monitoring status</dt><dd>{statusLabel}</dd></div>}
+        {entry.data.monitoringSince && <div><dt>Monitoring since</dt><dd>{formatDate(entry.data.monitoringSince)}</dd></div>}
       </dl>
-    </aside>
-  </div>
+    </div>
+  </header>
+
+  <section class="station-section shell" aria-labelledby="about-heading">
+    {entry.data.demo && <DemoNotice />}
+    <div class="station-section__heading">
+      <p class="eyebrow">Field context</p>
+      <h2 id="about-heading">About this station</h2>
+    </div>
+    <div class="station-about">
+      <div class="station-narrative">
+        {aboutText && <p class="station-description">{aboutText}</p>}
+        <div class="prose"><Content /></div>
+      </div>
+      <dl class="station-metadata">
+        {entry.data.coordinates && <div><dt>Coordinates</dt><dd>{entry.data.coordinates.latitude.toFixed(3)}°, {entry.data.coordinates.longitude.toFixed(3)}°</dd></div>}
+        {entry.data.habitat && <div><dt>Habitat</dt><dd>{entry.data.habitat}</dd></div>}
+        {entry.data.marineProtectedArea !== undefined && <div><dt>Marine protected area</dt><dd>{entry.data.marineProtectedArea ? 'Within a protected area' : 'No'}</dd></div>}
+        {entry.data.observationTypes.length > 0 && <div><dt>Observations</dt><dd>{entry.data.observationTypes.map(formatTerm).join(' · ')}</dd></div>}
+        {entry.data.instrumentation.length > 0 && <div><dt>Instrumentation</dt><dd>{entry.data.instrumentation.join(' · ')}</dd></div>}
+        {entry.data.deploymentConfiguration && <div><dt>Deployment</dt><dd>{entry.data.deploymentConfiguration}{entry.data.heightAboveSeafloorM !== undefined && ` · ${entry.data.heightAboveSeafloorM} m above seafloor`}</dd></div>}
+        {entry.data.monitoringPeriod && <div><dt>Monitoring period</dt><dd>{entry.data.monitoringPeriod}</dd></div>}
+        {entry.data.methods.length > 0 && <div><dt>Methods</dt><dd>{entry.data.methods.join(' · ')}</dd></div>}
+      </dl>
+    </div>
+  </section>
+
+  {audio.length > 0 && <section class="station-section station-section--tint" aria-labelledby="listen-heading"><div class="shell">
+    <div class="station-section__heading"><p class="eyebrow">Acoustic observations</p><h2 id="listen-heading">Listen</h2></div>
+    <div class="audio-list">
+      {audio.map(({ data }) => <article class="audio-observation">
+        <div><p class="record-kicker">{data.audioType ? formatTerm(data.audioType) : 'Audio observation'}</p><h3>{data.title}</h3><p>{data.recordingContext ?? data.summary}</p></div>
+        <div class="audio-playback">
+          {data.file && <audio controls preload="none" src={withBase(data.file)} aria-label={`Play ${data.title}`}>Your browser does not support HTML audio. <a href={withBase(data.file)}>Download the recording</a>.</audio>}
+          {data.listenFor.length > 0 && <div class="listen-for"><h4>Listen for</h4><ul>{data.listenFor.map((note) => <li>{note}</li>)}</ul></div>}
+        </div>
+      </article>)}
+    </div>
+  </div></section>}
+
+  {spectrograms.length > 0 && <section class="station-section station-media-section" aria-labelledby="soundscape-heading"><div class="shell">
+    <div class="station-section__heading station-section__heading--wide"><p class="eyebrow">Temporal observation</p><h2 id="soundscape-heading">Soundscape through time</h2></div>
+    {spectrograms.map(({ data }) => <article class="visualization-record">
+      <div class="visualization-intro"><div><h3>{data.title}</h3><p>{data.description ?? data.summary}</p></div>{data.interpretation && <aside><h4>Interpretation</h4><p>{data.interpretation}</p></aside>}</div>
+      {data.src && data.format === 'interactive-html' && <InteractiveEmbed src={data.src} title={data.title} />}
+    </article>)}
+  </div></section>}
+
+  {habitatVisualizations.length > 0 && <section class="station-section station-section--dark station-media-section" aria-labelledby="habitat-heading"><div class="shell">
+    <div class="station-section__heading station-section__heading--wide"><p class="eyebrow">Spatial context</p><h2 id="habitat-heading">Explore the habitat</h2></div>
+    {habitatVisualizations.map(({ data }) => <article class="visualization-record"><div class="visualization-intro"><div><h3>{data.title}</h3><p>{data.description ?? data.summary}</p></div>{data.interpretation && <aside><h4>Interpretation</h4><p>{data.interpretation}</p></aside>}</div>{data.src && data.format === 'interactive-html' && <InteractiveEmbed src={data.src} title={data.title} />}</article>)}
+  </div></section>}
+
+  {resources.length > 0 && <section class="station-section shell" aria-labelledby="data-heading">
+    <div class="station-section__heading"><p class="eyebrow">Open science</p><h2 id="data-heading">Data &amp; access</h2></div>
+    <div class="station-resource-list">{resources.map(({ data }) => <article><div><p class="record-kicker">{formatTerm(data.resourceType)}{data.repository && ` · ${data.repository}`}</p><h3>{data.title}</h3><p>{data.description ?? data.summary}</p></div>{data.url && <a class="button" href={data.url} target="_blank" rel="noopener">Access on {data.repository ?? 'external site'} <span aria-hidden="true">↗</span></a>}</article>)}</div>
+  </section>}
+
+  {hasRelatedEvidence && <section class="station-section station-section--tint" aria-labelledby="evidence-heading"><div class="shell">
+    <div class="station-section__heading"><p class="eyebrow">Connected records</p><h2 id="evidence-heading">Related evidence</h2></div>
+    <div class="evidence-records">
+      {surveys.map(({ id, data }) => <article><p class="record-kicker">Survey</p><h3><a href={surveyUrl(id)}>{data.title}</a></h3><p>{data.summary}</p></article>)}
+      {findings.map(({ data }) => <article><p class="record-kicker">Finding</p><h3>{data.title}</h3><p>{data.summary}</p></article>)}
+      {publications.map(({ data }) => <article><p class="record-kicker">Publication · {data.year}</p><h3>{data.url || data.doi ? <a href={data.url ?? data.doi} target="_blank" rel="noopener">{data.title} <span aria-hidden="true">↗</span></a> : data.title}</h3><p>{data.authors.join(', ')}</p></article>)}
+      {otherVisualizations.map(({ data }) => <article><p class="record-kicker">Visualization</p><h3>{data.title}</h3><p>{data.description ?? data.summary}</p></article>)}
+    </div>
+  </div></section>}
 </BaseLayout>

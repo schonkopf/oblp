@@ -7,7 +7,7 @@ demo: false
 station: "chaojing-10m"
 
 audioType: "soundscape"
-file: "assets/audio/stations/chaojing-10m/daytime.wav"
+file: "assets/audio/stations/chaojing-10m/daytime.mp3"
 
 listenFor:
   - "Snapping sounds"

@@ -10,7 +10,7 @@ stations:
 surveyType: spatial
 period: "Demonstration period"
 ecosystem: "Pelagic margin"
-observationTypes: [acoustic, environmental]
+observationTypes: [soundscape, temperature]
 polygon:
   - [-67, 38]
   - [-44, 38]
