@@ -1,0 +1,121 @@
+---
+interface Observation {
+  id: string;
+  title: string;
+  kind: 'station' | 'survey';
+  region: string;
+  startDate: Date | string;
+  url: string;
+}
+
+interface Props { observations: Observation[]; }
+
+const { observations } = Astro.props;
+const start = Date.UTC(2000, 0, 1);
+const now = Date.now();
+const span = Math.max(1, now - start);
+const laneCount = 5;
+const collisionDistance = 2.2;
+const laneEnds = Array(laneCount).fill(-Infinity);
+
+const points = observations
+  .map((observation) => {
+    const date = new Date(observation.startDate);
+    return { ...observation, date, timestamp: date.getTime() };
+  })
+  .filter(({ timestamp }) => Number.isFinite(timestamp) && timestamp >= start && timestamp <= now)
+  .sort((a, b) => a.timestamp - b.timestamp)
+  .map((observation) => {
+    const position = ((observation.timestamp - start) / span) * 100;
+    let lane = laneEnds.findIndex((lastPosition) => position - lastPosition >= collisionDistance);
+    if (lane === -1) lane = laneEnds.indexOf(Math.min(...laneEnds));
+    laneEnds[lane] = position;
+    const tooltipEdge = position < 18 ? 'start' : position > 82 ? 'end' : 'center';
+    return { ...observation, position, lane, tooltipEdge };
+  });
+
+const currentYear = new Date(now).getUTCFullYear();
+const tickYears = [2000, 2005, 2010, 2015, 2020, 2025].filter((year) => year < currentYear);
+const ticks = [
+  ...tickYears.map((year) => ({ label: String(year), position: ((Date.UTC(year, 0, 1) - start) / span) * 100 })),
+  { label: 'Now', position: 100 },
+];
+const formatDate = new Intl.DateTimeFormat('en', { year: 'numeric', month: 'short', day: 'numeric', timeZone: 'UTC' });
+---
+
+<section class="observation-history shell" aria-labelledby="observation-history-heading">
+  <div class="observation-history__heading">
+    <div>
+      <p class="eyebrow">Observation history</p>
+      <h2 id="observation-history-heading" class="visually-hidden">Observation history timeline</h2>
+    </div>
+    <ul class="observation-history__legend" aria-label="Marker legend">
+      <li><span class="history-key history-key--station" aria-hidden="true"></span>Station</li>
+      <li><span class="history-key history-key--survey" aria-hidden="true"></span>Survey</li>
+    </ul>
+  </div>
+
+  <div class="observation-history__viewport" tabindex="0" aria-label="Timeline from 2000 to now; scroll horizontally on narrow screens">
+    <div class="observation-history__plot">
+      <div class="observation-history__ticks" aria-hidden="true">
+        {ticks.map((tick) => <div class="history-tick" style={`--position: ${tick.position}%`}><span>{tick.label}</span></div>)}
+      </div>
+      <div class="observation-history__axis" aria-hidden="true"></div>
+      <div class="observation-history__markers">
+        {points.map((point) => (
+          <a
+            class={`history-marker history-marker--${point.kind}`}
+            href={point.url}
+            style={`--position: ${point.position}%; --lane: ${point.lane}`}
+            aria-label={`${point.title}, ${point.kind}, ${point.region}, began ${formatDate.format(point.date)}`}
+          >
+            <span class="history-marker__dot" aria-hidden="true"></span>
+            <span class={`history-tooltip history-tooltip--${point.tooltipEdge}`} role="tooltip">
+              <strong>{point.title}</strong>
+              <span>{point.kind === 'station' ? 'Station' : 'Survey'} · {point.region}</span>
+              <time datetime={point.date.toISOString().slice(0, 10)}>Began {formatDate.format(point.date)}</time>
+              <b>View {point.kind} →</b>
+            </span>
+          </a>
+        ))}
+      </div>
+    </div>
+  </div>
+</section>
+
+<style>
+  .observation-history { padding-block: var(--space-6); border-bottom: 1px solid var(--color-line); }
+  .observation-history__heading { display: flex; align-items: center; justify-content: space-between; gap: var(--space-4); }
+  .observation-history__heading .eyebrow { margin: 0; }
+  .observation-history__legend { display: flex; gap: var(--space-3); margin: 0; padding: 0; color: var(--color-muted); font-size: .72rem; list-style: none; }
+  .observation-history__legend li { display: flex; align-items: center; gap: .4rem; }
+  .history-key { width: .65rem; height: .65rem; border: 1.5px solid var(--color-teal-600); border-radius: 50%; }
+  .history-key--station { background: var(--color-ocean-800); border-color: var(--color-ocean-800); }
+  .history-key--survey { background: #fff; }
+  .observation-history__viewport { max-width: 100%; margin-top: var(--space-4); overflow-x: auto; overflow-y: hidden; scrollbar-width: thin; }
+  .observation-history__viewport:focus-visible { outline: 3px solid var(--color-signal); outline-offset: 3px; }
+  .observation-history__plot { position: relative; min-width: 43rem; height: 14.25rem; margin-inline: .45rem; }
+  .observation-history__ticks { position: absolute; inset: 0 0 auto; height: 100%; }
+  .history-tick { position: absolute; left: var(--position); height: 100%; border-left: 1px solid var(--color-line); }
+  .history-tick:first-child span { transform: none; }
+  .history-tick:last-child span { transform: translateX(-100%); }
+  .history-tick span { position: absolute; top: 0; transform: translateX(-50%); color: var(--color-muted); font-size: .66rem; font-weight: 650; letter-spacing: .06em; text-transform: uppercase; white-space: nowrap; }
+  .observation-history__axis { position: absolute; top: 2.15rem; right: 0; left: 0; height: 1px; background: var(--color-ocean-800); }
+  .observation-history__markers { position: absolute; inset: 2.15rem 0 auto; height: 8rem; }
+  .history-marker { position: absolute; z-index: 1; top: calc(.7rem + var(--lane) * 1.25rem); left: var(--position); display: grid; width: 1.35rem; height: 1.35rem; place-items: center; transform: translateX(-50%); border-radius: 50%; text-decoration: none; }
+  .history-marker__dot { width: .62rem; height: .62rem; border: 1.5px solid var(--color-teal-600); border-radius: 50%; background: #fff; transition: transform .15s ease, box-shadow .15s ease; }
+  .history-marker--station .history-marker__dot { border-color: var(--color-ocean-800); background: var(--color-ocean-800); }
+  .history-marker:hover, .history-marker:focus-visible { z-index: 3; outline: none; }
+  .history-marker:hover .history-marker__dot, .history-marker:focus-visible .history-marker__dot { transform: scale(1.45); box-shadow: 0 0 0 3px #fff, 0 0 0 4px var(--color-signal); }
+  .history-tooltip { position: absolute; z-index: 4; top: 1.65rem; left: 50%; display: none; width: 14.5rem; padding: .7rem .8rem; transform: translateX(-50%); border: 1px solid var(--color-line); background: #fff; box-shadow: 0 7px 22px rgba(4,31,45,.13); color: var(--color-muted); font-size: .7rem; line-height: 1.45; }
+  .history-tooltip--start { left: -.1rem; transform: none; }
+  .history-tooltip--end { right: -.1rem; left: auto; transform: none; }
+  .history-marker:hover .history-tooltip, .history-marker:focus .history-tooltip { display: grid; gap: .15rem; }
+  .history-tooltip strong { color: var(--color-ink); font-family: var(--font-serif); font-size: .9rem; font-weight: 600; }
+  .history-tooltip b { margin-top: .2rem; color: var(--color-teal-600); font-size: .68rem; }
+  @media (max-width: 760px) {
+    .observation-history { padding-block: var(--space-5); }
+    .observation-history__heading { align-items: flex-start; flex-direction: column; gap: .7rem; }
+    .observation-history__viewport { margin-right: -1rem; padding-right: 1rem; }
+  }
+</style>
