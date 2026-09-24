@@ -1,0 +1,23 @@
+---
+import { withBase } from '../utils/urls';
+
+interface Props {
+  src: string;
+  title: string;
+}
+
+const { src, title } = Astro.props;
+const href = withBase(src);
+---
+
+<figure class="interactive-embed">
+  <div class="interactive-embed__frame">
+    <iframe src={href} title={title} loading="lazy">
+      <p>Your browser cannot display this visualization. <a href={href}>Open it in a separate view</a>.</p>
+    </iframe>
+  </div>
+  <figcaption>
+    <span>Interactive scientific visualization</span>
+    <a href={href} target="_blank" rel="noopener">Open full-size <span aria-hidden="true">↗</span></a>
+  </figcaption>
+</figure>

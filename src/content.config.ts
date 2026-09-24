@@ -16,7 +16,19 @@ const common = z.object({
   demo: z.boolean().default(false),
   updated: z.coerce.date().optional(),
 });
-const observationType = z.enum(['acoustic', 'visual', 'environmental', 'multimodal']);
+// A single, filterable vocabulary describing what a station actually observes.
+// Keep this list specific rather than mixing broad modes (such as "environmental")
+// with measurements (such as "temperature").
+const observationType = z.enum([
+  'soundscape',
+  'temperature',
+  'light',
+  'eDNA',
+  'imagery',
+  'video',
+  'water-chemistry',
+  'oceanographic',
+]);
 const collection = (name: string) => glob({ pattern: '**/*.{md,json,yaml,yml}', base: `./src/content/${name}` });
 
 const regions = defineCollection({
@@ -30,14 +42,21 @@ const regions = defineCollection({
 const stations = defineCollection({
   loader: collection('stations'),
   schema: common.extend({
+    description: z.string().min(1).optional(),
     region: reference('regions'),
     stationType: z.enum(['long-term', 'campaign', 'mobile']),
     habitat: z.string().optional(),
+    ecosystem: z.string().optional(),
+    marineProtectedArea: z.boolean().optional(),
     depthM: z.number().nonnegative().optional(),
     coordinates: z.object({ latitude: z.number(), longitude: z.number() }).optional(),
     monitoringPeriod: z.string().optional(),
-    observationTypes: z.array(observationType).default(['acoustic']),
-    ecosystem: z.string().optional(),
+    monitoringSince: z.coerce.date().optional(),
+    operationalStatus: z.enum(['operational', 'seasonal', 'inactive', 'decommissioned', 'unknown']).optional(),
+    observationTypes: z.array(observationType).default(['soundscape']),
+    instrumentation: z.array(z.string().min(1)).default([]),
+    deploymentConfiguration: z.string().optional(),
+    heightAboveSeafloorM: z.number().nonnegative().optional(),
     methods: z.array(z.string()).default([]),
     media: mediaAsset.optional(),
   }),
@@ -50,7 +69,7 @@ const surveys = defineCollection({
     stations: z.array(reference('stations')).default([]),
     surveyType: z.enum(['spatial', 'temporal', 'experimental']),
     period: z.string().optional(),
-    observationTypes: z.array(observationType).default(['acoustic']),
+    observationTypes: z.array(observationType).default(['soundscape']),
     ecosystem: z.string().optional(),
     polygon: z.array(z.tuple([z.number(), z.number()])).min(3).optional(),
     methods: z.array(z.string()).default([]),
@@ -65,7 +84,11 @@ const audio = defineCollection({
     survey: reference('surveys').optional(),
     recordedAt: z.coerce.date().optional(),
     durationSeconds: z.number().positive().optional(),
-    file: z.string().optional(),
+    sampleRateHz: z.number().positive().optional(),
+    audioType: z.enum(['soundscape', 'species-vocalization', 'anthropogenic-sound', 'other']).optional(),
+    file: z.string().min(1).optional(),
+    recordingContext: z.string().optional(),
+    listenFor: z.array(z.string().min(1)).default([]),
     spectrogram: mediaAsset.optional(),
     license: z.string().optional(),
   }).refine((item) => item.station || item.survey, 'Audio must reference a station or survey.'),
@@ -74,10 +97,14 @@ const audio = defineCollection({
 const visualizations = defineCollection({
   loader: collection('visualizations'),
   schema: common.extend({
-    kind: z.enum(['figure', 'map', 'interactive', 'embedded-html']),
+    visualizationType: z.enum(['long-term-spectrogram', 'photogrammetry', 'figure', 'map', 'other']),
+    format: z.enum(['interactive-html', 'image', 'external']),
     station: reference('stations').optional(),
     survey: reference('surveys').optional(),
-    source: z.string().optional(),
+    src: z.string().min(1).optional(),
+    description: z.string().min(1).optional(),
+    interpretation: z.string().min(1).optional(),
+    interactive: z.boolean().default(false),
     thumbnail: mediaAsset.optional(),
   }),
 });
@@ -118,6 +145,9 @@ const resources = defineCollection({
     license: z.string().optional(),
     citation: z.string().optional(),
     accessConditions: z.string().optional(),
+    description: z.string().min(1).optional(),
+    repository: z.string().min(1).optional(),
+    stations: z.array(reference('stations')).default([]),
   }),
 });
 

@@ -7,7 +7,7 @@ region: demo-pelagic-margin
 stationType: long-term
 habitat: "Illustrative coastal habitat"
 ecosystem: "Coastal shelf"
-observationTypes: [acoustic, environmental]
+observationTypes: [soundscape, temperature]
 coordinates:
   latitude: 44.25
   longitude: -63.4

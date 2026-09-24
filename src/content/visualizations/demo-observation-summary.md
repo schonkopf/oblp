@@ -3,7 +3,8 @@ title: "Demo Observation Summary"
 summary: "A placeholder record showing where a reviewed figure, map, or embedded visualization can be connected."
 status: published
 demo: true
-kind: figure
+visualizationType: figure
+format: image
 survey: demo-listening-transect
 updated: 2026-09-22
 ---

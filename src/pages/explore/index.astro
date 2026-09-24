@@ -15,6 +15,8 @@ const records = [
 ];
 const ecosystems = [...new Set(records.map((item) => item.ecosystem))];
 const regionNames = [...new Set(records.map((item) => item.region))];
+const observationTypes = [...new Set(records.flatMap((item) => item.observations))];
+const formatObservation = (value: string) => value === 'eDNA' ? value : value.replaceAll('-', ' ').replace(/\b\w/g, (letter) => letter.toUpperCase());
 const page = await getEntry('pages', 'explore');
 if (!page || page.data.pageType !== 'explore') throw new Error('Missing or invalid pages/explore content entry.');
 ---
@@ -26,7 +28,7 @@ if (!page || page.data.pageType !== 'explore') throw new Error('Missing or inval
     <DemoNotice />
     <div class="explore-controls" aria-label="Filter observation records">
       <label class="search-field"><span>Search locations</span><input type="search" name="query" placeholder="Search by title, place, or method" /></label>
-      <label><span>Observation</span><select name="observation"><option value="">All types</option><option value="acoustic">Acoustic</option><option value="visual">Visual</option><option value="environmental">Environmental</option><option value="multimodal">Multimodal</option></select></label>
+      <label><span>Observation</span><select name="observation"><option value="">All types</option>{observationTypes.map((value) => <option value={value}>{formatObservation(value)}</option>)}</select></label>
       <label><span>Ecosystem</span><select name="ecosystem"><option value="">All ecosystems</option>{ecosystems.map((value) => <option value={value}>{value}</option>)}</select></label>
       <label><span>Region</span><select name="region"><option value="">All regions</option>{regionNames.map((value) => <option value={value}>{value}</option>)}</select></label>
       <button class="reset-button" type="button">Reset</button>
