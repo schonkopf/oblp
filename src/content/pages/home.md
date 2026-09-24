@@ -3,9 +3,9 @@ title: "Home"
 pageType: home
 description: "The Ocean Biodiversity Listening Project uses underwater sound to study marine biodiversity, ecosystem dynamics, and environmental change across space and time."
 
-eyebrow: "Ocean Biodiversity Listening Project"
-heroTitle: "Listening to the ocean's voice"
-heroText: "OBLP uses underwater sound to explore marine biodiversity and ecosystem change—from coral reefs to the deep sea, and from daily biological rhythms to long-term environmental change."
+eyebrow: "Mission"
+heroTitle: "Listening to the ocean's heartbeat"
+heroText: "The ocean is filled with sounds produced by whales, fishes, snapping shrimps, and many other marine organisms. These sounds form dynamic soundscapes that carry information about biodiversity and ecosystem processes. By listening across day and night, seasons, and periods of disturbance and recovery, OBLP aims to reveal ecological changes that conventional visual surveys can easily miss and offer insights to support conservation and ecosystem management."
 
 primaryCta:
   label: "Explore recording locations"
