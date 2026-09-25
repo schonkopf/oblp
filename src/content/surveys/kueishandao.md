@@ -34,7 +34,7 @@ instrumentation:
   - "SoundTrap 300"
   - "SoundTrap 400"
 
-deploymentConfiguration: "Drifting snapshot recording"
+deploymentConfiguration: "Drifting buoy"
 
 monitoringSince: 2021-05-06
 operationalStatus: operational
