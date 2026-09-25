@@ -10,7 +10,7 @@ const surveys = await getCollection('surveys', ({ data }) => data.status === 'pu
 const regions = new Map((await getCollection('regions')).map((region) => [region.id, region.data.title]));
 const historyObservations = [
   ...stations.filter(({ data }) => data.monitoringSince).map(({ id, data }) => ({ id, title: data.title, kind: 'station' as const, region: regions.get(data.region.id) ?? 'Not specified', startDate: data.monitoringSince!, url: stationUrl(id) })),
-  ...surveys.filter(({ data }) => data.startDate).map(({ id, data }) => ({ id, title: data.title, kind: 'survey' as const, region: regions.get(data.region.id) ?? 'Not specified', startDate: data.startDate!, url: surveyUrl(id) })),
+  ...surveys.filter(({ data }) => data.monitoringSince).map(({ id, data }) => ({ id, title: data.title, kind: 'survey' as const, region: regions.get(data.region.id) ?? 'Not specified', startDate: data.monitoringSince!, url: surveyUrl(id) })),
 ];
 const formatRecordType = (value: string) => {
   const labels: Record<string, string> = {
@@ -22,13 +22,34 @@ const formatRecordType = (value: string) => {
   };
   return labels[value] ?? value;
 };
+const polygonCenter = (polygon: Array<[number, number]>): [number, number] => {
+  let twiceArea = 0;
+  let longitudeSum = 0;
+  let latitudeSum = 0;
+  polygon.forEach(([longitude, latitude], index) => {
+    const [nextLongitude, nextLatitude] = polygon[(index + 1) % polygon.length];
+    const cross = longitude * nextLatitude - nextLongitude * latitude;
+    twiceArea += cross;
+    longitudeSum += (longitude + nextLongitude) * cross;
+    latitudeSum += (latitude + nextLatitude) * cross;
+  });
+  if (Math.abs(twiceArea) > Number.EPSILON) {
+    return [longitudeSum / (3 * twiceArea), latitudeSum / (3 * twiceArea)];
+  }
+  const longitudes = polygon.map(([longitude]) => longitude);
+  const latitudes = polygon.map(([, latitude]) => latitude);
+  return [(Math.min(...longitudes) + Math.max(...longitudes)) / 2, (Math.min(...latitudes) + Math.max(...latitudes)) / 2];
+};
 const records = [
-  ...stations.map((entry) => ({ id: entry.id, title: entry.data.title, summary: entry.data.summary, kind: 'station', recordType: entry.data.recordType, recordLabel: formatRecordType(entry.data.recordType), observations: entry.data.observationTypes, ecosystem: entry.data.ecosystem ?? entry.data.habitat ?? 'Not specified', region: regions.get(entry.data.region.id) ?? 'Not specified', url: stationUrl(entry.id), geometry: entry.data.coordinates ? { type: 'Point', coordinates: [entry.data.coordinates.longitude, entry.data.coordinates.latitude] } : null })),
+  ...stations.map((entry) => ({ id: entry.id, title: entry.data.title, summary: entry.data.summary, kind: 'station', recordType: entry.data.recordType, recordLabel: formatRecordType(entry.data.recordType), observations: entry.data.observationTypes, ecosystem: entry.data.ecosystem ?? entry.data.habitat ?? 'Not specified', region: regions.get(entry.data.region.id) ?? 'Not specified', url: stationUrl(entry.id), geometry: entry.data.coordinates ? { type: 'Point', coordinates: [entry.data.coordinates.longitude, entry.data.coordinates.latitude] } : null, clusterLocation: entry.data.coordinates ? [entry.data.coordinates.longitude, entry.data.coordinates.latitude] : null })),
   ...surveys.map((entry) => {
     const extent = entry.data.mapExtent;
     const extentPolygon = extent ? [[extent.west, extent.south], [extent.east, extent.south], [extent.east, extent.north], [extent.west, extent.north], [extent.west, extent.south]] : null;
     const polygon = extentPolygon ?? (entry.data.polygon ? [...entry.data.polygon, entry.data.polygon[0]] : null);
-    return { id: entry.id, title: entry.data.title, summary: entry.data.summary, kind: 'survey', recordType: entry.data.recordType, recordLabel: formatRecordType(entry.data.recordType), observations: entry.data.observationTypes, ecosystem: entry.data.ecosystem ?? 'Not specified', region: regions.get(entry.data.region.id) ?? 'Not specified', url: surveyUrl(entry.id), geometry: polygon ? { type: 'Polygon', coordinates: [polygon] } : null };
+    const clusterLocation = extent
+      ? [(extent.west + extent.east) / 2, (extent.south + extent.north) / 2]
+      : entry.data.polygon ? polygonCenter(entry.data.polygon) : null;
+    return { id: entry.id, title: entry.data.title, summary: entry.data.summary, kind: 'survey', recordType: entry.data.recordType, recordLabel: formatRecordType(entry.data.recordType), observations: entry.data.observationTypes, ecosystem: entry.data.ecosystem ?? 'Not specified', region: regions.get(entry.data.region.id) ?? 'Not specified', url: surveyUrl(entry.id), geometry: polygon ? { type: 'Polygon', coordinates: [polygon] } : null, clusterLocation };
   }),
 ];
 const ecosystems = [...new Set(records.map((item) => item.ecosystem))];
@@ -78,35 +99,134 @@ if (!page || page.data.pageType !== 'explore') throw new Error('Missing or inval
     const noResults = explorer.querySelector('.no-results');
     let map;
     let layerGroup;
+    let visibleRecords = records;
+    const closeZoom = 9;
+    const clusterRadius = 72;
     const escapeHtml = (value) => String(value).replace(/[&<>'"]/g, (char) => ({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[char]));
     function initMap() {
       if (!window.L) return;
       map = L.map('network-map', { scrollWheelZoom: true }).setView([43, -54], 3);
       L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 18, attribution: '&copy; OpenStreetMap contributors' }).addTo(map);
       layerGroup = L.featureGroup().addTo(map);
-      update();
+      map.on('zoomend', renderMap);
+      update({ fitMap: true });
     }
-    function update() {
+    function popupContent(item) {
+      return `<strong>${escapeHtml(item.title)}</strong><br><span>${escapeHtml(item.recordLabel)}</span><p>${escapeHtml(item.summary)}</p><a href="${escapeHtml(item.url)}">View ${escapeHtml(item.kind)} &rarr;</a>`;
+    }
+    function bindObservation(layer, item) {
+      layer.bindPopup(popupContent(item));
+      layer.bindTooltip(`${item.title} — ${item.recordLabel}`);
+      layer.eachLayer?.((child) => bindObservationAccessibility(child, item));
+      bindObservationAccessibility(layer, item);
+      return layer;
+    }
+    function bindObservationAccessibility(layer, item) {
+      layer.on?.('add', () => {
+        const element = layer.getElement?.();
+        if (element) element.setAttribute('aria-label', `${item.title}, ${item.recordLabel}`);
+      });
+    }
+    function observationLayer(item, compact = false) {
+      const [longitude, latitude] = item.clusterLocation;
+      if (item.kind === 'station') {
+        return bindObservation(L.circleMarker([latitude, longitude], {
+          radius: compact ? 7 : 9,
+          color: 'var(--map-marker-halo)',
+          weight: 3,
+          fillColor: 'var(--map-station)',
+          fillOpacity: 1,
+        }), item);
+      }
+      if (compact) {
+        return bindObservation(L.marker([latitude, longitude], {
+          title: `${item.title}, ${item.recordLabel}`,
+          icon: L.divIcon({ className: 'survey-location-icon', html: '<span aria-hidden="true"></span>', iconSize: [22, 22], iconAnchor: [11, 11] }),
+        }), item);
+      }
+      return bindObservation(L.geoJSON({ type: 'Feature', properties: item, geometry: item.geometry }, {
+        style: { color: 'var(--map-survey-outline)', weight: 4, opacity: 1, fillColor: 'var(--map-survey-fill)', fillOpacity: .22 },
+      }), item);
+    }
+    function clusterVisible(items) {
+      const located = items.filter((item) => item.clusterLocation);
+      const parent = located.map((_, index) => index);
+      const find = (index) => parent[index] === index ? index : (parent[index] = find(parent[index]));
+      const unite = (left, right) => { const leftRoot = find(left); const rightRoot = find(right); if (leftRoot !== rightRoot) parent[rightRoot] = leftRoot; };
+      const points = located.map((item) => map.latLngToLayerPoint([item.clusterLocation[1], item.clusterLocation[0]]));
+      for (let left = 0; left < points.length; left += 1) {
+        for (let right = left + 1; right < points.length; right += 1) {
+          if (points[left].distanceTo(points[right]) <= clusterRadius) unite(left, right);
+        }
+      }
+      const groups = new Map();
+      located.forEach((item, index) => {
+        const root = find(index);
+        if (!groups.has(root)) groups.set(root, []);
+        groups.get(root).push(item);
+      });
+      return [...groups.values()];
+    }
+    function renderCluster(items) {
+      const latitude = items.reduce((sum, item) => sum + item.clusterLocation[1], 0) / items.length;
+      const longitude = items.reduce((sum, item) => sum + item.clusterLocation[0], 0) / items.length;
+      const stations = items.filter((item) => item.kind === 'station').length;
+      const surveys = items.length - stations;
+      const label = `${items.length} observation records in this area`;
+      const size = Math.min(48, 34 + Math.log2(items.length) * 4);
+      const marker = L.marker([latitude, longitude], {
+        title: label,
+        keyboard: true,
+        icon: L.divIcon({
+          className: 'observation-cluster-icon',
+          html: `<span role="img" aria-label="${label}">${items.length}</span>`,
+          iconSize: [size, size],
+          iconAnchor: [size / 2, size / 2],
+        }),
+      });
+      marker.bindTooltip(`<strong>${items.length} observations</strong><br>${stations} ${stations === 1 ? 'station' : 'stations'} · ${surveys} ${surveys === 1 ? 'survey' : 'surveys'}`);
+      marker.on('click', () => {
+        const bounds = L.latLngBounds(items.map((item) => [item.clusterLocation[1], item.clusterLocation[0]]));
+        if (bounds.getNorthEast().equals(bounds.getSouthWest())) map.setView(bounds.getCenter(), Math.min(closeZoom, map.getZoom() + 2));
+        else map.fitBounds(bounds, { padding: [45, 45], maxZoom: closeZoom });
+      });
+      marker.addTo(layerGroup);
+    }
+    function renderMap() {
+      if (!map) return;
+      layerGroup.clearLayers();
+      const located = visibleRecords.filter((item) => item.clusterLocation && item.geometry);
+      if (map.getZoom() >= closeZoom) {
+        located.forEach((item) => observationLayer(item).addTo(layerGroup));
+        return;
+      }
+      clusterVisible(located).forEach((items) => {
+        if (items.length > 1) renderCluster(items);
+        else observationLayer(items[0], true).addTo(layerGroup);
+      });
+    }
+    function fitVisibleRecords() {
+      const layers = visibleRecords.filter((item) => item.geometry && item.clusterLocation).map((item) => L.geoJSON({ type: 'Feature', properties: item, geometry: item.geometry }));
+      if (!layers.length) return;
+      const bounds = L.featureGroup(layers).getBounds();
+      if (bounds.isValid()) map.fitBounds(bounds, { padding: [30, 30], maxZoom: 7 });
+    }
+    function update({ fitMap = false } = {}) {
       const query = explorer.querySelector('[name=query]').value.trim().toLowerCase();
       const observation = explorer.querySelector('[name=observation]').value;
       const ecosystem = explorer.querySelector('[name=ecosystem]').value;
       const region = explorer.querySelector('[name=region]').value;
-      const visible = records.filter((item) => (!query || `${item.title} ${item.summary} ${item.region} ${item.ecosystem}`.toLowerCase().includes(query)) && (!observation || item.observations.includes(observation)) && (!ecosystem || item.ecosystem === ecosystem) && (!region || item.region === region));
-      cards.forEach((card) => { card.hidden = !visible.some((item) => item.id === JSON.parse(card.dataset.record).id); });
-      status.textContent = `Showing ${visible.length} of ${records.length} records`;
-      noResults.hidden = visible.length !== 0;
+      visibleRecords = records.filter((item) => (!query || `${item.title} ${item.summary} ${item.region} ${item.ecosystem}`.toLowerCase().includes(query)) && (!observation || item.observations.includes(observation)) && (!ecosystem || item.ecosystem === ecosystem) && (!region || item.region === region));
+      const visibleIds = new Set(visibleRecords.map((item) => item.id));
+      cards.forEach((card) => { card.hidden = !visibleIds.has(JSON.parse(card.dataset.record).id); });
+      status.textContent = `Showing ${visibleRecords.length} of ${records.length} records`;
+      noResults.hidden = visibleRecords.length !== 0;
       if (!map) return;
-      layerGroup.clearLayers();
-      visible.forEach((item) => {
-        if (!item.geometry) return;
-        const feature = { type: 'Feature', properties: item, geometry: item.geometry };
-        const layer = L.geoJSON(feature, { pointToLayer: (_, latlng) => L.circleMarker(latlng, { radius: 9, color: '#fff', weight: 2, fillColor: '#f1a55b', fillOpacity: 1 }), style: { color: '#5cd1c9', weight: 2, fillColor: '#168b87', fillOpacity: .25 } });
-        layer.bindPopup(`<strong>${escapeHtml(item.title)}</strong><br><span>${escapeHtml(item.recordLabel)}</span><p>${escapeHtml(item.summary)}</p><a href="${escapeHtml(item.url)}">View ${escapeHtml(item.kind)}</a>`).addTo(layerGroup);
-      });
-      if (layerGroup.getLayers().length) map.fitBounds(layerGroup.getBounds(), { padding: [30, 30], maxZoom: 6 });
+      renderMap();
+      if (fitMap) fitVisibleRecords();
     }
-    explorer.addEventListener('input', update);
-    explorer.querySelector('.reset-button').addEventListener('click', () => { explorer.querySelectorAll('input, select').forEach((input) => input.value = ''); update(); });
+    explorer.addEventListener('input', () => update({ fitMap: true }));
+    explorer.querySelector('.reset-button').addEventListener('click', () => { explorer.querySelectorAll('input, select').forEach((input) => input.value = ''); update({ fitMap: true }); });
     const leaflet = document.createElement('script'); leaflet.src = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js'; leaflet.crossOrigin = 'anonymous'; leaflet.onload = initMap; document.head.append(leaflet);
   </script>
 </BaseLayout>
