@@ -6,7 +6,7 @@ description: "Kueishan Island is a volcanic island where rocky reefs, hydrotherm
 status: published
 demo: false
 
-surveyType: spatial
+recordType: spatial-survey
 region: north-taiwan
 
 ecosystem: "Volcanic island coastal ecosystem"

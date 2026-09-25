@@ -7,7 +7,7 @@ region: demo-pelagic-margin
 stations:
   - demo-continuous-listening
   - demo-campaign-station
-surveyType: spatial
+recordType: spatial-survey
 period: "Demonstration period"
 ecosystem: "Pelagic margin"
 observationTypes: [soundscape, temperature]

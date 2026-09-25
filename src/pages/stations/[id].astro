@@ -3,6 +3,7 @@ import { getCollection, getEntry, render, type CollectionEntry } from 'astro:con
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import DemoNotice from '../../components/DemoNotice.astro';
 import InteractiveEmbed from '../../components/InteractiveEmbed.astro';
+import AssociatedDatasets from '../../components/AssociatedDatasets.astro';
 import { surveyUrl, withBase } from '../../utils/urls';
 
 export async function getStaticPaths() {
@@ -47,7 +48,7 @@ const aboutText = entry.data.description;
   <header class="station-hero">
     <div class="shell station-hero__layout">
       <div>
-        <p class="eyebrow">{formatTerm(entry.data.stationType)} monitoring station</p>
+        <p class="eyebrow">{entry.data.recordType === 'long-term-station' ? 'Long-term monitoring station' : 'Short-term monitoring station'}</p>
         <h1>{entry.data.title}</h1>
         <p class="station-location">{region?.data.title}{entry.data.ecosystem && <> · {entry.data.ecosystem}</>}</p>
         <p class="lede">{entry.data.summary}</p>
@@ -114,10 +115,7 @@ const aboutText = entry.data.description;
     {habitatVisualizations.map(({ data }) => <article class="visualization-record"><div class="visualization-intro"><div><h3>{data.title}</h3><p>{data.description ?? data.summary}</p></div>{data.interpretation && <aside><h4>Interpretation</h4><p>{data.interpretation}</p></aside>}</div>{data.src && data.format === 'interactive-html' && <InteractiveEmbed src={data.src} title={data.title} />}</article>)}
   </div></section>}
 
-  {resources.length > 0 && <section class="station-section shell" aria-labelledby="data-heading">
-    <div class="station-section__heading"><p class="eyebrow">Associated datasets</p><h2 id="data-heading" class="visually-hidden">Associated datasets</h2></div>
-    <div class="station-resource-list">{resources.map(({ data }) => <article><div><p class="record-kicker">{formatTerm(data.resourceType)}{data.repository && ` · ${data.repository}`}</p><h3>{data.title}</h3><p>{data.description ?? data.summary}</p></div>{data.url && <a class="button" href={data.url} target="_blank" rel="noopener">Access on {data.repository ?? 'external site'} <span aria-hidden="true">↗</span></a>}</article>)}</div>
-  </section>}
+  <AssociatedDatasets datasets={resources} />
 
   {hasRelatedEvidence && <section class="station-section station-section--tint" aria-labelledby="evidence-heading"><div class="shell">
     <div class="station-section__heading"><p class="eyebrow">Connected records</p><h2 id="evidence-heading">Related evidence</h2></div>

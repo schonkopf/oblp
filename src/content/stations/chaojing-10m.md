@@ -6,7 +6,7 @@ description: "The station is situated on a subtropical rocky reef characterized 
 status: published
 demo: false
 
-stationType: long-term
+recordType: long-term-station
 region: north-taiwan
 ecosystem: "Subtropical reef"
 habitat: "Subtropical rocky reef with non-reefal coral communities"

@@ -2,8 +2,9 @@
 import { getCollection, getEntry, render, type CollectionEntry } from 'astro:content';
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import DemoNotice from '../../components/DemoNotice.astro';
-import ArrowLink from '../../components/ArrowLink.astro';
-import { stationUrl, withBase } from '../../utils/urls';
+import InteractiveEmbed from '../../components/InteractiveEmbed.astro';
+import AssociatedDatasets from '../../components/AssociatedDatasets.astro';
+import { withBase } from '../../utils/urls';
 
 export async function getStaticPaths() {
   const entries = await getCollection('surveys', ({ data }) => data.status === 'published');
@@ -14,33 +15,81 @@ interface Props { entry: CollectionEntry<'surveys'>; }
 const { entry } = Astro.props;
 const { Content } = await render(entry);
 const region = await getEntry(entry.data.region);
-const stations = (await Promise.all(entry.data.stations.map((station) => getEntry(station)))).filter((station) => station?.data.status === 'published');
-const formatDate = new Intl.DateTimeFormat('en', { year: 'numeric', month: 'long', day: 'numeric', timeZone: 'UTC' });
+const [allVisualizations, allResources] = await Promise.all([
+  getCollection('visualizations', ({ data }) => data.status === 'published'),
+  getCollection('resources', ({ data }) => data.status === 'published'),
+]);
+const visualizations = allVisualizations.filter(({ data }) => data.survey?.id === entry.id);
+const datasets = allResources.filter(({ data }) => data.resourceType === 'dataset' && data.surveys.some(({ id }) => id === entry.id));
+const formatDate = (date: Date) => new Intl.DateTimeFormat('en', { year: 'numeric', month: 'long', day: 'numeric', timeZone: 'UTC' }).format(date);
+const formatTerm = (value: string) => value === 'eDNA' ? value : value.replaceAll('-', ' ').replace(/\b\w/g, (letter) => letter.toUpperCase());
+const activityLabel = entry.data.recordType === 'spatial-survey' && entry.data.observationTypes.includes('soundscape')
+  ? 'Soundscape mapping'
+  : formatTerm(entry.data.recordType);
+const extent = entry.data.mapExtent;
 ---
 
 <BaseLayout title={entry.data.title} description={entry.data.summary}>
-  <header class="detail-hero"><div class="shell"><p class="eyebrow">{entry.data.surveyType} survey</p><h1>{entry.data.title}</h1><p class="lede">{entry.data.summary}</p></div></header>
-  <div class="detail-grid shell">
-    <article class="detail-content">
-      {entry.data.demo && <DemoNotice />}
-      <div class="prose"><Content /></div>
-      <h2>Survey methods</h2>
-      {entry.data.methods.length ? <ul class="tag-list">{entry.data.methods.map((method) => <li>{method}</li>)}</ul> : <p class="empty-state">Methods have not been provided.</p>}
-      <h2>Stations in this survey</h2>
-      {stations.length ? <div class="record-list">{stations.map((station) => station && <article class="record"><p class="record-meta">{station.data.stationType} station</p><div><h2>{station.data.title}</h2><p>{station.data.summary}</p></div><ArrowLink href={stationUrl(station.id)} label="Open" /></article>)}</div> : <p class="empty-state">No published stations are connected to this survey.</p>}
-      <p><ArrowLink href={withBase('explore/')} label="Back to explore" /></p>
-    </article>
-    <aside class="metadata" aria-label="Survey metadata">
-      <p class="eyebrow">Survey metadata</p>
-      <dl>
-        <div><dt>Stable ID</dt><dd>{entry.id}</dd></div>
-        <div><dt>Region</dt><dd>{region?.data.title ?? 'Not provided'}</dd></div>
-        <div><dt>Period</dt><dd>{entry.data.period ?? 'Not provided'}</dd></div>
-        {entry.data.startDate && <div><dt>Start date</dt><dd><time datetime={entry.data.startDate.toISOString().slice(0, 10)}>{formatDate.format(entry.data.startDate)}</time></dd></div>}
-        {entry.data.endDate && <div><dt>End date</dt><dd><time datetime={entry.data.endDate.toISOString().slice(0, 10)}>{formatDate.format(entry.data.endDate)}</time></dd></div>}
-        <div><dt>Survey type</dt><dd>{entry.data.surveyType}</dd></div>
-        <div><dt>Published stations</dt><dd>{stations.length}</dd></div>
+  <header class="station-hero">
+    <div class="shell station-hero__layout">
+      <div>
+        <p class="eyebrow">{activityLabel}</p>
+        <h1>{entry.data.title}</h1>
+        <p class="station-location">{region?.data.title}{entry.data.ecosystem && <> · {entry.data.ecosystem}</>}</p>
+        <p class="lede">{entry.data.summary}</p>
+      </div>
+      <dl class="station-vitals" aria-label="Key survey facts">
+        {entry.data.monitoringStatus && <div><dt>Monitoring status</dt><dd>{formatTerm(entry.data.monitoringStatus)}</dd></div>}
+        {entry.data.monitoringSince && <div><dt>Monitoring since</dt><dd>{formatDate(entry.data.monitoringSince)}</dd></div>}
       </dl>
-    </aside>
-  </div>
+    </div>
+  </header>
+
+  <section class="station-section shell" aria-labelledby="context-heading">
+    {entry.data.demo && <DemoNotice />}
+    <div class="station-section__heading">
+      <p class="eyebrow">Environmental context</p>
+      <h2 id="context-heading" class="visually-hidden">Environmental context</h2>
+    </div>
+    <div class="station-about">
+      <div class="station-narrative">
+        {entry.data.description && <p class="station-description">{entry.data.description}</p>}
+        <div class="prose"><Content /></div>
+      </div>
+      <dl class="station-metadata">
+        {extent && <div><dt>Survey extent</dt><dd>{extent.south.toFixed(3)}–{extent.north.toFixed(3)}° N · {extent.west.toFixed(3)}–{extent.east.toFixed(3)}° E</dd></div>}
+        {!extent && entry.data.period && <div><dt>Survey period</dt><dd>{entry.data.period}</dd></div>}
+        {entry.data.ecosystem && <div><dt>Ecosystem</dt><dd>{entry.data.ecosystem}</dd></div>}
+        {entry.data.habitat.length > 0 && <div><dt>Habitats</dt><dd>{entry.data.habitat.join(' · ')}</dd></div>}
+        {entry.data.depthRangeM && <div><dt>Depth range</dt><dd>{entry.data.depthRangeM.min}–{entry.data.depthRangeM.max} m</dd></div>}
+        {entry.data.marineProtectedArea !== undefined && <div><dt>Marine protected area</dt><dd>{entry.data.marineProtectedArea ? 'Within a protected area' : 'No'}</dd></div>}
+        {entry.data.observationTypes.length > 0 && <div><dt>Observations</dt><dd>{entry.data.observationTypes.map(formatTerm).join(' · ')}</dd></div>}
+        {entry.data.instrumentation.length > 0 && <div><dt>Instrumentation</dt><dd>{entry.data.instrumentation.join(' · ')}</dd></div>}
+        {entry.data.deploymentConfiguration && <div><dt>Deployment</dt><dd>{entry.data.deploymentConfiguration}</dd></div>}
+        {entry.data.methods.length > 0 && <div><dt>Methods</dt><dd>{entry.data.methods.join(' · ')}</dd></div>}
+      </dl>
+    </div>
+    {entry.data.media && <figure class="station-field-image">
+      <img src={withBase(entry.data.media.src)} alt={entry.data.media.alt} loading="lazy" />
+      {(entry.data.media.caption || entry.data.media.credit) && <figcaption>{entry.data.media.caption}{entry.data.media.caption && entry.data.media.credit && ' '}{entry.data.media.credit && <span>Credit: {entry.data.media.credit}</span>}</figcaption>}
+    </figure>}
+  </section>
+
+  <section class="station-section station-section--tint station-media-section" aria-labelledby="observations-heading"><div class="shell">
+    <div class="station-section__heading station-section__heading--wide">
+      <p class="eyebrow">Spatial observations</p>
+      <h2 id="observations-heading" class="visually-hidden">Spatial observations</h2>
+    </div>
+    {visualizations.length > 0 ? visualizations.map(({ data }) => <article class="visualization-record">
+      <div class="visualization-intro">
+        <div><h3>{data.title}</h3><p>{data.description ?? data.summary}</p></div>
+        {data.interpretation && <aside><h4>Interpretation</h4><p>{data.interpretation}</p></aside>}
+      </div>
+      {data.src && data.format === 'interactive-html' && <InteractiveEmbed src={data.src} title={data.title} />}
+      {data.src && data.format === 'image' && <img class="visualization-image" src={withBase(data.src)} alt={data.title} loading="lazy" />}
+      {data.src && data.format === 'external' && <p><a class="button" href={data.src} target="_blank" rel="noopener">Open visualization <span aria-hidden="true">↗</span></a></p>}
+    </article>) : <p class="dataset-empty">Coming soon.</p>}
+  </div></section>
+
+  <AssociatedDatasets datasets={datasets} />
 </BaseLayout>

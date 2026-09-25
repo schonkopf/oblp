@@ -4,7 +4,7 @@ summary: "A fictional campaign station showing a compact page for a time-bounded
 status: published
 demo: true
 region: demo-pelagic-margin
-stationType: campaign
+recordType: short-term-station
 habitat: "Illustrative offshore habitat"
 ecosystem: "Pelagic margin"
 observationTypes: [soundscape, imagery]
