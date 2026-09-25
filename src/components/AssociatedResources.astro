@@ -1,0 +1,34 @@
+---
+export interface AssociatedResource {
+  title: string;
+  summary: string;
+  typeLabel: string;
+  href?: string;
+  actionLabel?: string;
+}
+
+interface Props { resources: AssociatedResource[]; }
+
+const { resources } = Astro.props;
+---
+
+{resources.length > 0 && (
+  <section class="station-section shell" aria-labelledby="resources-heading">
+    <div class="station-section__heading">
+      <p class="eyebrow">Associated resources</p>
+      <h2 id="resources-heading" class="visually-hidden">Associated resources</h2>
+    </div>
+    <div class="associated-resource-list">
+      {resources.map((resource) => (
+        <article>
+          <div>
+            <p class="record-kicker">{resource.typeLabel}</p>
+            <h3>{resource.title}</h3>
+            <p>{resource.summary}</p>
+          </div>
+          {resource.href && resource.actionLabel && <a class="button" href={resource.href} target="_blank" rel="noopener">{resource.actionLabel} <span aria-hidden="true">↗</span></a>}
+        </article>
+      ))}
+    </div>
+  </section>
+)}

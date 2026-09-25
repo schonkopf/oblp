@@ -3,8 +3,8 @@ import { getCollection, getEntry, render, type CollectionEntry } from 'astro:con
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import DemoNotice from '../../components/DemoNotice.astro';
 import InteractiveEmbed from '../../components/InteractiveEmbed.astro';
-import AssociatedDatasets from '../../components/AssociatedDatasets.astro';
-import { surveyUrl, withBase } from '../../utils/urls';
+import AssociatedResources from '../../components/AssociatedResources.astro';
+import { withBase } from '../../utils/urls';
 
 export async function getStaticPaths() {
   const entries = await getCollection('stations', ({ data }) => data.status === 'published');
@@ -16,30 +16,40 @@ const { entry } = Astro.props;
 const { Content } = await render(entry);
 const region = await getEntry(entry.data.region);
 
-const [allSurveys, allAudio, allVisualizations, allResources, allFindings, allPublications, allPartners] = await Promise.all([
-  getCollection('surveys', ({ data }) => data.status === 'published'),
+const [allAudio, allVisualizations, allResources, allPublications, allPartners] = await Promise.all([
   getCollection('audio', ({ data }) => data.status === 'published'),
   getCollection('visualizations', ({ data }) => data.status === 'published'),
   getCollection('resources', ({ data }) => data.status === 'published'),
-  getCollection('findings', ({ data }) => data.status === 'published'),
   getCollection('publications', ({ data }) => data.status === 'published'),
   getCollection('partners', ({ data }) => data.status === 'published'),
 ]);
 
-const surveys = allSurveys.filter(({ data }) => data.stations.some(({ id }) => id === entry.id));
 const audio = allAudio.filter(({ data }) => data.station?.id === entry.id);
 const visualizations = allVisualizations.filter(({ data }) => data.station?.id === entry.id);
-const resources = allResources.filter(({ data }) => data.resourceType === 'dataset' && data.stations.some(({ id }) => id === entry.id));
-const findings = allFindings.filter(({ data }) => data.stations.some(({ id }) => id === entry.id));
+const resources = allResources.filter(({ data }) => data.stations.some(({ id }) => id === entry.id));
 const publications = allPublications.filter(({ data }) => data.relatedStations.some(({ id }) => id === entry.id));
 const partners = allPartners.filter(({ id }) => entry.data.partners.some((reference) => reference.id === id));
 const spectrograms = visualizations.filter(({ data }) => data.visualizationType === 'long-term-spectrogram');
 const habitatVisualizations = visualizations.filter(({ data }) => data.visualizationType === 'photogrammetry');
-const otherVisualizations = visualizations.filter(({ data }) => !['long-term-spectrogram', 'photogrammetry'].includes(data.visualizationType));
-const hasRelatedEvidence = surveys.length + findings.length + publications.length + otherVisualizations.length > 0;
 
 const formatDate = (date: Date) => new Intl.DateTimeFormat('en', { year: 'numeric', month: 'long', day: 'numeric', timeZone: 'UTC' }).format(date);
 const formatTerm = (value: string) => value === 'eDNA' ? value : value.replaceAll('-', ' ').replace(/\b\w/g, (letter) => letter.toUpperCase());
+const associatedResources = [
+  ...resources.map(({ data }) => ({
+    title: data.title,
+    summary: data.description ?? data.summary,
+    typeLabel: formatTerm(data.resourceType),
+    href: data.url,
+    actionLabel: data.url ? `Access on ${data.repository ?? 'external site'}` : undefined,
+  })),
+  ...publications.map(({ data }) => ({
+    title: data.title,
+    summary: data.summary,
+    typeLabel: 'Peer-reviewed article',
+    href: data.url ?? data.doi,
+    actionLabel: data.url || data.doi ? 'View publication' : undefined,
+  })),
+];
 const statusLabel = entry.data.operationalStatus ? formatTerm(entry.data.operationalStatus) : undefined;
 const aboutText = entry.data.description;
 ---
@@ -115,17 +125,7 @@ const aboutText = entry.data.description;
     {habitatVisualizations.map(({ data }) => <article class="visualization-record"><div class="visualization-intro"><div><h3>{data.title}</h3><p>{data.description ?? data.summary}</p></div>{data.interpretation && <aside><h4>Interpretation</h4><p>{data.interpretation}</p></aside>}</div>{data.src && data.format === 'interactive-html' && <InteractiveEmbed src={data.src} title={data.title} />}</article>)}
   </div></section>}
 
-  <AssociatedDatasets datasets={resources} />
-
-  {hasRelatedEvidence && <section class="station-section station-section--tint" aria-labelledby="evidence-heading"><div class="shell">
-    <div class="station-section__heading"><p class="eyebrow">Connected records</p><h2 id="evidence-heading">Related evidence</h2></div>
-    <div class="evidence-records">
-      {surveys.map(({ id, data }) => <article><p class="record-kicker">Survey</p><h3><a href={surveyUrl(id)}>{data.title}</a></h3><p>{data.summary}</p></article>)}
-      {findings.map(({ data }) => <article><p class="record-kicker">Finding</p><h3>{data.title}</h3><p>{data.summary}</p></article>)}
-      {publications.map(({ data }) => <article><p class="record-kicker">Publication · {data.year}</p><h3>{data.url || data.doi ? <a href={data.url ?? data.doi} target="_blank" rel="noopener">{data.title} <span aria-hidden="true">↗</span></a> : data.title}</h3><p>{data.authors.join(', ')}</p></article>)}
-      {otherVisualizations.map(({ data }) => <article><p class="record-kicker">Visualization</p><h3>{data.title}</h3><p>{data.description ?? data.summary}</p></article>)}
-    </div>
-  </div></section>}
+  <AssociatedResources resources={associatedResources} />
   {partners.length > 0 && <section class="station-section station-section--dark" aria-labelledby="partners-heading"><div class="shell">
     <div class="station-section__heading"><p class="eyebrow">Partners</p><h2 id="partners-heading" class="visually-hidden">Partners</h2></div>
     <div class="partner-list">{partners.map(({ data }) => <article>
