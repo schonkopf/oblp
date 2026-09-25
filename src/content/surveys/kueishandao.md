@@ -37,7 +37,7 @@ instrumentation:
 deploymentConfiguration: "Drifting buoy"
 
 monitoringSince: 2021-05-06
-operationalStatus: operational
+monitoringStatus: ongoing
 
 media:
   src: "assets/images/surveys/kueishandao/Header.jpg"
