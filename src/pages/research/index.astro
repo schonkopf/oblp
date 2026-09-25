@@ -1,41 +1,23 @@
 ---
 import { getCollection, getEntry } from 'astro:content';
 import BaseLayout from '../../layouts/BaseLayout.astro';
-import PageIntro from '../../components/PageIntro.astro';
-import DemoNotice from '../../components/DemoNotice.astro';
 import FindingSummary from '../../components/FindingSummary.astro';
 import { stationUrl, surveyUrl, withBase } from '../../utils/urls';
 
-const publications = (await getCollection('publications', ({ data }) => data.status === 'published')).sort((a, b) => b.data.year - a.data.year);
-const findings = await getCollection('findings', ({ data }) => data.status === 'published');
+const findings = await getCollection('findings', ({ data }) => data.status === 'published' && !data.demo);
 const stations = new Map((await getCollection('stations')).map((entry) => [entry.id, entry.data.title]));
 const surveys = new Map((await getCollection('surveys')).map((entry) => [entry.id, entry.data.title]));
 const regions = new Map((await getCollection('regions')).map((entry) => [entry.id, entry.data.title]));
+const publications = new Map((await getCollection('publications')).map((entry) => [entry.id, entry.data.title]));
+const visualizations = new Map((await getCollection('visualizations')).map((entry) => [entry.id, entry.data.title]));
 const page = await getEntry('pages', 'research');
 if (!page || page.data.pageType !== 'research') throw new Error('Missing or invalid pages/research content entry.');
 ---
 <BaseLayout title={page.data.title} description={page.data.description}>
-  <PageIntro eyebrow={page.data.eyebrow} title={page.data.heroTitle} description={page.data.heroText} />
-  <section class="section shell research-approach"><div><p class="eyebrow">{page.data.approach.eyebrow}</p><h2>{page.data.approach.title}</h2><p>{page.data.approach.text}</p></div><ol>{page.data.themes.map((theme, index) => <li><span>{String(index + 1).padStart(2, '0')}</span><h3>{theme.title}</h3><p>{theme.text}</p></li>)}</ol></section>
-  <section class="evidence-section"><div class="shell"><div class="section-heading split-heading"><div><p class="eyebrow">{page.data.evidence.eyebrow}</p><h2>{page.data.evidence.title}</h2></div><p>{page.data.evidence.text}</p></div><DemoNotice /><div class="finding-list">{findings.map((finding, index) => {
-    const context = [...finding.data.regions.map((item) => regions.get(item.id) ?? item.id), ...finding.data.stations.map((item) => stations.get(item.id) ?? item.id), ...finding.data.surveys.map((item) => surveys.get(item.id) ?? item.id)];
+  <section class="page-hero page-hero--dark"><div class="shell"><p class="eyebrow">{page.data.eyebrow}</p><h1>{page.data.heroTitle}</h1><p class="lede">{page.data.heroText}</p></div></section>
+  <section class="evidence-section"><div class="shell"><div class="section-heading split-heading"><div><p class="eyebrow">{page.data.evidence.eyebrow}</p><h2>{page.data.evidence.title}</h2></div><p>{page.data.evidence.text}</p></div><div class="finding-list">{findings.map((finding, index) => {
+    const context = [...finding.data.regions.map((item) => regions.get(item.id) ?? item.id), ...finding.data.stations.map((item) => stations.get(item.id) ?? item.id), ...finding.data.surveys.map((item) => surveys.get(item.id) ?? item.id), ...(finding.data.publication ? [`Publication: ${publications.get(finding.data.publication.id) ?? finding.data.publication.id}`] : []), ...(finding.data.visualization ? [`Visualization: ${visualizations.get(finding.data.visualization.id) ?? finding.data.visualization.id}`] : [])];
     const href = finding.data.stations[0] ? stationUrl(finding.data.stations[0].id) : finding.data.surveys[0] ? surveyUrl(finding.data.surveys[0].id) : withBase('explore/');
     return <FindingSummary finding={finding} context={context} href={href} linkLabel="Open a connected observation" marker={`F–${String(index + 1).padStart(2, '0')}`} />;
   })}</div></div></section>
-  <section class="section section-tint"><div class="shell">
-    <div class="section-heading split-heading"><div><p class="eyebrow">Publication directory</p><h2>{page.data.publicationsTitle}</h2></div><p>{page.data.publicationsText}</p></div>
-    <DemoNotice />
-    <div class="publication-list">
-      {publications.map((publication) => <article class="publication-card">
-        <div class="publication-year">{publication.data.year}</div>
-        <div><p class="card-type">{publication.data.journal ?? publication.data.venue ?? 'Publication'}</p><h2>{publication.data.title}</h2><p class="authors">{publication.data.authors.join(', ')}</p><p>{publication.data.summary}</p>
-          <div class="publication-links">
-            {publication.data.doi && <a class="button compact" href={publication.data.doi}>View DOI <span class="visually-hidden">for {publication.data.title}</span></a>}
-            {publication.data.relatedStations.map((station) => <a href={stationUrl(station.id)}>Station: {station.id}</a>)}
-            {publication.data.relatedSurveys.map((survey) => <a href={surveyUrl(survey.id)}>Survey: {survey.id}</a>)}
-          </div>
-        </div>
-      </article>)}
-    </div>
-  </div></section>
 </BaseLayout>

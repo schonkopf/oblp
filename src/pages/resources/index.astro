@@ -1,24 +1,122 @@
 ---
 import { getCollection, getEntry } from 'astro:content';
 import BaseLayout from '../../layouts/BaseLayout.astro';
-import PageIntro from '../../components/PageIntro.astro';
-import DemoNotice from '../../components/DemoNotice.astro';
-const resources = await getCollection('resources', ({ data }) => data.status === 'published');
-const categories = [{ id: 'dataset', title: 'Datasets' }, { id: 'software', title: 'Software' }, { id: 'tutorial', title: 'Tutorials' }] as const;
+import { withBase } from '../../utils/urls';
+
+const publications = await getCollection('publications', ({ data }) => data.status === 'published' && !data.demo);
+const reusableResources = await getCollection('resources', ({ data }) =>
+  data.status === 'published' && !data.demo && ['dataset', 'software', 'tutorial'].includes(data.resourceType),
+);
 const page = await getEntry('pages', 'resources');
 if (!page || page.data.pageType !== 'resources') throw new Error('Missing or invalid pages/resources content entry.');
-const pageData = page.data;
+
+const resourceLabels = { publication: 'Publication', dataset: 'Dataset', software: 'Software', tutorial: 'Tutorial' } as const;
+const records = [
+  ...publications.map(({ id, data }) => ({
+    id,
+    kind: 'publication' as const,
+    title: data.title,
+    summary: data.summary,
+    year: data.year,
+    authors: data.authors,
+    metadata: data.journal ?? data.venue ?? 'Scientific publication',
+    citation: data.citation,
+    repository: undefined,
+    license: undefined,
+    access: undefined,
+    href: data.doi ?? data.url,
+    action: data.doi ? 'View DOI' : 'Open publication',
+  })),
+  ...reusableResources.map(({ id, data }) => ({
+    id,
+    kind: data.resourceType as 'dataset' | 'software' | 'tutorial',
+    title: data.title,
+    summary: data.summary,
+    year: undefined,
+    authors: undefined,
+    metadata: data.repository ?? data.license ?? 'Reusable resource',
+    citation: data.citation,
+    repository: data.repository,
+    license: data.license,
+    access: data.accessConditions,
+    href: data.url ?? (data.file ? withBase(data.file) : undefined),
+    action: data.url ? (data.resourceType === 'software' ? 'Open repository' : `Open ${data.resourceType}`) : data.file ? 'Download resource' : undefined,
+  })),
+].sort((a, b) => (b.year ?? 0) - (a.year ?? 0) || a.title.localeCompare(b.title));
+
+const categories = [
+  { id: 'publication', label: 'Publications' },
+  { id: 'dataset', label: 'Datasets' },
+  { id: 'software', label: 'Software' },
+  { id: 'tutorial', label: 'Tutorials' },
+] as const;
+const counts = Object.fromEntries(categories.map(({ id }) => [id, records.filter((record) => record.kind === id).length]));
 ---
 <BaseLayout title={page.data.title} description={page.data.description}>
-  <PageIntro eyebrow={page.data.eyebrow} title={page.data.heroTitle} description={page.data.heroText} />
-  <section class="page-bridge shell"><p class="eyebrow">Reuse the work</p><h2>Context travels with every resource.</h2><p>{page.data.introduction}</p></section>
-  <section class="listing shell"><DemoNotice />
-    <nav class="category-nav" aria-label="Resource categories">{categories.map((category) => <a href={`#${category.id}`}>{category.title}<span>{resources.filter((item) => item.data.resourceType === category.id).length}</span></a>)}</nav>
-    {categories.map((category) => {
-      const items = resources.filter((item) => item.data.resourceType === category.id);
-      return <section class="resource-section" id={category.id}><div class="resource-heading"><p class="eyebrow">Resource type</p><h2>{category.title}</h2><p>{pageData.categoryDescriptions[category.id]}</p></div><div class="resource-grid">
-        {items.length ? items.map((resource) => <article class="resource-card"><p class="card-type">{resource.data.resourceType}</p><h3>{resource.data.title}</h3><p>{resource.data.summary}</p><dl><div><dt>License</dt><dd>{resource.data.license ?? 'Not specified'}</dd></div><div><dt>Access</dt><dd>{resource.data.accessConditions ?? 'Contact the project for access details.'}</dd></div>{resource.data.citation && <div><dt>Cite as</dt><dd>{resource.data.citation}</dd></div>}</dl>{resource.data.url ? <a class="arrow-link" href={resource.data.url}>Open external resource <span aria-hidden="true">↗</span></a> : resource.data.file ? <a class="arrow-link" href={resource.data.file}>Download resource <span aria-hidden="true">↓</span></a> : <span class="availability">Catalogue record only</span>}</article>) : <p class="empty-state">No published {category.title.toLowerCase()} are available yet.</p>}
-      </div></section>;
-    })}
+  <section class="page-hero page-hero--dark"><div class="shell"><p class="eyebrow">{page.data.eyebrow}</p><h1>{page.data.heroTitle}</h1><p class="lede">{page.data.heroText}</p></div></section>
+
+  <section class="resource-catalogue shell" data-resource-catalogue>
+    <h2 class="visually-hidden">Resource catalogue</h2>
+    <dl class="resource-stats" aria-label="Published resources by type">
+      {categories.map(({ id, label }) => <div><dt>{label}</dt><dd>{String(counts[id]).padStart(2, '0')}</dd></div>)}
+    </dl>
+
+    <div class="resource-controls" aria-label="Filter resources">
+      <label class="search-field"><span>Search resources</span><input type="search" name="query" placeholder="Search titles, authors, citations, or repositories" /></label>
+      <label><span>Type</span><select name="type"><option value="">All types</option>{categories.map(({ id, label }) => <option value={id}>{label}</option>)}</select></label>
+      <button class="reset-button" type="button">Reset</button>
+    </div>
+    <p class="results-status" aria-live="polite">Showing {records.length} of {records.length} resources</p>
+    <div class="resource-results">
+      {records.map((record) => {
+        const searchable = [record.title, record.summary, record.authors?.join(' '), record.year, resourceLabels[record.kind], record.metadata, record.citation, record.repository].filter(Boolean).join(' ').toLocaleLowerCase();
+        return <article class="resource-result" data-resource data-kind={record.kind} data-search={searchable}>
+          <div class="resource-result__meta"><span>{resourceLabels[record.kind]}</span>{record.year && <span>{record.year}</span>}</div>
+          <h3>{record.title}</h3>
+          {record.authors && <p class="resource-result__authors">{record.authors.join(', ')}</p>}
+          <p class="resource-result__summary">{record.summary}</p>
+          <dl class="resource-result__details">
+            {record.metadata && <div><dt>Source</dt><dd>{record.metadata}</dd></div>}
+            {record.license && <div><dt>License</dt><dd>{record.license}</dd></div>}
+            {record.citation && <div><dt>Citation</dt><dd>{record.citation}</dd></div>}
+            {record.access && <div><dt>Access</dt><dd>{record.access}</dd></div>}
+          </dl>
+          {record.href && record.action && <a class="arrow-link" href={record.href}>{record.action} <span aria-hidden="true">↗</span><span class="visually-hidden">: {record.title}</span></a>}
+        </article>;
+      })}
+      <p class="empty-state no-results" hidden>No resources match these filters. Try broadening your search.</p>
+    </div>
   </section>
+
+  <script>
+    const catalogue = document.querySelector<HTMLElement>('[data-resource-catalogue]');
+    if (catalogue) {
+      const queryInput = catalogue.querySelector<HTMLInputElement>('input[name="query"]');
+      const typeSelect = catalogue.querySelector<HTMLSelectElement>('select[name="type"]');
+      const reset = catalogue.querySelector<HTMLButtonElement>('.reset-button');
+      const status = catalogue.querySelector<HTMLElement>('.results-status');
+      const noResults = catalogue.querySelector<HTMLElement>('.no-results');
+      const items = [...catalogue.querySelectorAll<HTMLElement>('[data-resource]')];
+      const update = () => {
+        const query = queryInput?.value.trim().toLocaleLowerCase() ?? '';
+        const type = typeSelect?.value ?? '';
+        let visible = 0;
+        items.forEach((item) => {
+          const matches = (!query || item.dataset.search?.includes(query)) && (!type || item.dataset.kind === type);
+          item.hidden = !matches;
+          if (matches) visible += 1;
+        });
+        if (status) status.textContent = `Showing ${visible} of ${items.length} resources`;
+        if (noResults) noResults.hidden = visible !== 0;
+      };
+      queryInput?.addEventListener('input', update);
+      typeSelect?.addEventListener('change', update);
+      reset?.addEventListener('click', () => {
+        if (queryInput) queryInput.value = '';
+        if (typeSelect) typeSelect.value = '';
+        update();
+        queryInput?.focus();
+      });
+    }
+  </script>
 </BaseLayout>

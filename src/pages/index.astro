@@ -1,7 +1,6 @@
 ---
 import { getCollection, getEntry } from 'astro:content';
 import BaseLayout from '../layouts/BaseLayout.astro';
-import FindingSummary from '../components/FindingSummary.astro';
 import ArrowLink from '../components/ArrowLink.astro';
 import { withBase } from '../utils/urls';
 
@@ -11,8 +10,6 @@ if (!page || page.data.pageType !== 'home') throw new Error('Missing or invalid 
 const stations = await getCollection('stations', ({ data }) => data.status === 'published');
 const surveys = await getCollection('surveys', ({ data }) => data.status === 'published');
 const resources = await getCollection('resources', ({ data }) => data.status === 'published');
-const regions = new Map((await getCollection('regions')).map((region) => [region.id, region.data.title]));
-const findings = await getCollection('findings', ({ data }) => data.status === 'published' && data.featured);
 const partners = await getCollection('partners', ({ data }) => data.status === 'published' && data.partnerType !== 'funder');
 
 const networkCounts = [
@@ -21,12 +18,6 @@ const networkCounts = [
   { label: 'Resources', value: resources.length },
   { label: 'Partners', value: partners.length },
 ];
-const featuredFinding = findings[0];
-const findingContext = featuredFinding ? [
-  ...featuredFinding.data.regions.map((reference) => regions.get(reference.id) ?? reference.id),
-  ...featuredFinding.data.stations.map((reference) => stations.find((entry) => entry.id === reference.id)?.data.title ?? reference.id),
-  ...featuredFinding.data.surveys.map((reference) => surveys.find((entry) => entry.id === reference.id)?.data.title ?? reference.id),
-] : [];
 ---
 <BaseLayout title={page.data.title} description={page.data.description}>
   <section class="home-hero">
@@ -72,11 +63,23 @@ const findingContext = featuredFinding ? [
 
   <section class="evidence-section">
     <div class="shell evidence-grid">
+      <figure class="research-concept">
+        <svg viewBox="0 0 640 520" role="img" aria-labelledby="research-concept-title research-concept-description">
+          <title id="research-concept-title">Interacting research domains</title>
+          <desc id="research-concept-description">Biodiversity, soundscape, and the ocean environment form a connected triangular system.</desc>
+          <g class="concept-connections" aria-hidden="true"><path d="M320 152 L174 356 L466 356 Z" /></g>
+          <g class="concept-domains">
+            <circle cx="320" cy="130" r="92" /><circle cx="155" cy="382" r="92" /><circle cx="485" cy="382" r="92" />
+          </g>
+          <g class="concept-labels">
+            <text x="320" y="136">Biodiversity</text><text x="155" y="388">Soundscape</text>
+            <text x="485" y="374"><tspan x="485">Ocean</tspan><tspan x="485" dy="24">environment</tspan></text>
+          </g>
+        </svg>
+        <figcaption>Three interacting domains shape the OBLP research programme.</figcaption>
+      </figure>
       <div class="evidence-intro"><p class="eyebrow">{page.data.findings.eyebrow}</p><h2>{page.data.findings.title}</h2><p>{page.data.findings.text}</p></div>
-      <div>
-        {featuredFinding ? <FindingSummary finding={featuredFinding} context={findingContext} href={withBase('research/')} /> : <p class="empty-state">No published featured findings are available.</p>}
-        <p class="evidence-action"><ArrowLink href={withBase('research/')} label={page.data.findings.actionLabel} /></p>
-      </div>
+      <p class="evidence-action"><ArrowLink href={withBase('research/')} label={page.data.findings.actionLabel} /></p>
     </div>
   </section>
 

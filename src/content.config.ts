@@ -245,20 +245,10 @@ const pages = defineCollection({
     }),
     pageBase.extend({
       pageType: z.literal('research'),
-      approach: editorialSection,
-      themes: z.array(z.object({ title: z.string().min(1), text: z.string().min(1) })).min(2).max(4),
       evidence: editorialSection,
-      publicationsTitle: z.string().min(1),
-      publicationsText: z.string().min(1),
     }),
     pageBase.extend({
       pageType: z.literal('resources'),
-      introduction: z.string().min(1),
-      categoryDescriptions: z.object({
-        dataset: z.string().min(1),
-        software: z.string().min(1),
-        tutorial: z.string().min(1),
-      }),
     }),
     pageBase.omit({ heroText: true }).extend({
       pageType: z.literal('about'),
