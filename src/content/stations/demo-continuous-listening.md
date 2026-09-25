@@ -4,7 +4,7 @@ summary: "A fictional long-term station illustrating how recurring observations,
 status: published
 demo: true
 region: demo-pelagic-margin
-stationType: long-term
+recordType: long-term-station
 habitat: "Illustrative coastal habitat"
 ecosystem: "Coastal shelf"
 observationTypes: [soundscape, temperature]

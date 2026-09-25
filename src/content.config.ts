@@ -44,7 +44,7 @@ const stations = defineCollection({
   schema: common.extend({
     description: z.string().min(1).optional(),
     region: reference('regions'),
-    stationType: z.enum(['long-term', 'campaign', 'mobile']),
+    recordType: z.enum(['long-term-station', 'short-term-station']),
     habitat: z.string().optional(),
     ecosystem: z.string().optional(),
     marineProtectedArea: z.boolean().optional(),
@@ -66,14 +66,32 @@ const stations = defineCollection({
 const surveys = defineCollection({
   loader: collection('surveys'),
   schema: common.extend({
+    description: z.string().min(1).optional(),
     region: reference('regions'),
     stations: z.array(reference('stations')).default([]),
-    surveyType: z.enum(['spatial', 'temporal', 'experimental']),
+    recordType: z.enum(['spatial-survey', 'temporal-survey', 'experimental-survey']),
     period: z.string().optional(),
     startDate: z.coerce.date().optional(),
     endDate: z.coerce.date().optional(),
     observationTypes: z.array(observationType).default(['soundscape']),
     ecosystem: z.string().optional(),
+    habitat: z.array(z.string().min(1)).default([]),
+    marineProtectedArea: z.boolean().optional(),
+    mapExtent: z.object({
+      west: z.number().min(-180).max(180),
+      east: z.number().min(-180).max(180),
+      south: z.number().min(-90).max(90),
+      north: z.number().min(-90).max(90),
+    }).refine(({ west, east }) => west < east, 'Survey map extent west must be less than east.')
+      .refine(({ south, north }) => south < north, 'Survey map extent south must be less than north.').optional(),
+    depthRangeM: z.object({
+      min: z.number().nonnegative(),
+      max: z.number().nonnegative(),
+    }).refine(({ min, max }) => min <= max, 'Survey minimum depth must not exceed maximum depth.').optional(),
+    instrumentation: z.array(z.string().min(1)).default([]),
+    deploymentConfiguration: z.string().min(1).optional(),
+    monitoringSince: z.coerce.date().optional(),
+    monitoringStatus: z.enum(['ongoing', 'seasonal', 'completed', 'inactive', 'unknown']).optional(),
     polygon: z.array(z.tuple([z.number(), z.number()])).min(3).optional(),
     methods: z.array(z.string()).default([]),
     media: mediaAsset.optional(),
@@ -151,6 +169,7 @@ const resources = defineCollection({
     description: z.string().min(1).optional(),
     repository: z.string().min(1).optional(),
     stations: z.array(reference('stations')).default([]),
+    surveys: z.array(reference('surveys')).default([]),
   }),
 });
 

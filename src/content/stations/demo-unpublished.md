@@ -4,7 +4,7 @@ summary: "A draft record used to verify that unpublished content is excluded fro
 status: draft
 demo: true
 region: demo-pelagic-margin
-stationType: campaign
+recordType: short-term-station
 methods: []
 ---
 
