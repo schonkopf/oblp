@@ -15,7 +15,7 @@ if (!page || page.data.pageType !== 'research') throw new Error('Missing or inva
 ---
 <BaseLayout title={page.data.title} description={page.data.description}>
   <section class="page-hero page-hero--dark"><div class="shell"><p class="eyebrow">{page.data.eyebrow}</p><h1>{page.data.heroTitle}</h1><p class="lede">{page.data.heroText}</p></div></section>
-  <section class="evidence-section"><div class="shell"><div class="section-heading split-heading"><div><p class="eyebrow">{page.data.evidence.eyebrow}</p><h2>{page.data.evidence.title}</h2></div><p>{page.data.evidence.text}</p></div><div class="finding-list">{findings.map((finding, index) => {
+  <section class="evidence-section"><div class="shell"><div class="finding-list">{findings.map((finding, index) => {
     const context = [...finding.data.regions.map((item) => regions.get(item.id) ?? item.id), ...finding.data.stations.map((item) => stations.get(item.id) ?? item.id), ...finding.data.surveys.map((item) => surveys.get(item.id) ?? item.id), ...(finding.data.publication ? [`Publication: ${publications.get(finding.data.publication.id) ?? finding.data.publication.id}`] : []), ...(finding.data.visualization ? [`Visualization: ${visualizations.get(finding.data.visualization.id) ?? finding.data.visualization.id}`] : [])];
     const href = finding.data.stations[0] ? stationUrl(finding.data.stations[0].id) : finding.data.surveys[0] ? surveyUrl(finding.data.surveys[0].id) : withBase('explore/');
     return <FindingSummary finding={finding} context={context} href={href} linkLabel="Open a connected observation" marker={`F–${String(index + 1).padStart(2, '0')}`} />;

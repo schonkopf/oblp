@@ -245,7 +245,6 @@ const pages = defineCollection({
     }),
     pageBase.extend({
       pageType: z.literal('research'),
-      evidence: editorialSection,
     }),
     pageBase.extend({
       pageType: z.literal('resources'),
