@@ -3,7 +3,7 @@ import { getCollection, getEntry, render, type CollectionEntry } from 'astro:con
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import DemoNotice from '../../components/DemoNotice.astro';
 import InteractiveEmbed from '../../components/InteractiveEmbed.astro';
-import AssociatedDatasets from '../../components/AssociatedDatasets.astro';
+import AssociatedResources from '../../components/AssociatedResources.astro';
 import { withBase } from '../../utils/urls';
 
 export async function getStaticPaths() {
@@ -15,14 +15,32 @@ interface Props { entry: CollectionEntry<'surveys'>; }
 const { entry } = Astro.props;
 const { Content } = await render(entry);
 const region = await getEntry(entry.data.region);
-const [allVisualizations, allResources] = await Promise.all([
+const [allVisualizations, allResources, allPublications] = await Promise.all([
   getCollection('visualizations', ({ data }) => data.status === 'published'),
   getCollection('resources', ({ data }) => data.status === 'published'),
+  getCollection('publications', ({ data }) => data.status === 'published'),
 ]);
 const visualizations = allVisualizations.filter(({ data }) => data.survey?.id === entry.id);
-const datasets = allResources.filter(({ data }) => data.resourceType === 'dataset' && data.surveys.some(({ id }) => id === entry.id));
+const resources = allResources.filter(({ data }) => data.surveys.some(({ id }) => id === entry.id));
+const publications = allPublications.filter(({ data }) => data.relatedSurveys.some(({ id }) => id === entry.id));
 const formatDate = (date: Date) => new Intl.DateTimeFormat('en', { year: 'numeric', month: 'long', day: 'numeric', timeZone: 'UTC' }).format(date);
 const formatTerm = (value: string) => value === 'eDNA' ? value : value.replaceAll('-', ' ').replace(/\b\w/g, (letter) => letter.toUpperCase());
+const associatedResources = [
+  ...resources.map(({ data }) => ({
+    title: data.title,
+    summary: data.description ?? data.summary,
+    typeLabel: formatTerm(data.resourceType),
+    href: data.url,
+    actionLabel: data.url ? `Access on ${data.repository ?? 'external site'}` : undefined,
+  })),
+  ...publications.map(({ data }) => ({
+    title: data.title,
+    summary: data.summary,
+    typeLabel: 'Peer-reviewed article',
+    href: data.url ?? data.doi,
+    actionLabel: data.url || data.doi ? 'View publication' : undefined,
+  })),
+];
 const activityLabel = entry.data.recordType === 'spatial-survey' && entry.data.observationTypes.includes('soundscape')
   ? 'Soundscape mapping'
   : formatTerm(entry.data.recordType);
@@ -91,5 +109,5 @@ const extent = entry.data.mapExtent;
     </article>) : <p class="dataset-empty">Coming soon.</p>}
   </div></section>
 
-  <AssociatedDatasets datasets={datasets} />
+  <AssociatedResources resources={associatedResources} />
 </BaseLayout>
