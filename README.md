@@ -62,6 +62,12 @@ When editing a primary page, change its corresponding file in `src/content/pages
 
 Each filename supplies a stable, URL-safe content ID. References use those IDs and are checked at build time. Common fields include `title`, `summary`, `status`, `demo`, and optional `updated`. Media and domain-specific fields are optional so incomplete historical records can render explicit missing-data states instead of failing unexpectedly.
 
+### Observation lineage
+
+A Survey observation site may later continue as a persistent Station. The Survey remains the record of the original, coherent sampling design, while the Station represents the subsequent persistence of observation at that place. Keep both records independently addressable: Survey identity comes from coherence of sampling design, and Station identity comes from persistence of place.
+
+Record this optional lineage only on the Station, using `origin.survey` to reference the Survey and `origin.observationSite` to identify one of that Survey's `observationSites`. Survey pages derive the reverse Survey → Station relationship at build time; do not duplicate it in Survey Markdown. Lineage describes observation continuity only and does not propagate publication or resource relationships between records.
+
 To add real content:
 
 1. Copy a demonstration Markdown file in the relevant collection.

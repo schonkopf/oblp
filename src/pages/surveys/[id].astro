@@ -4,8 +4,9 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
 import DemoNotice from '../../components/DemoNotice.astro';
 import InteractiveEmbed from '../../components/InteractiveEmbed.astro';
 import AssociatedResources from '../../components/AssociatedResources.astro';
+import { deriveStationContinuations } from '../../utils/observationLineage';
 import { deriveExtent } from '../../utils/surveyExtent';
-import { withBase } from '../../utils/urls';
+import { stationUrl, withBase } from '../../utils/urls';
 
 export async function getStaticPaths() {
   const entries = await getCollection('surveys', ({ data }) => data.status === 'published');
@@ -16,10 +17,11 @@ interface Props { entry: CollectionEntry<'surveys'>; }
 const { entry } = Astro.props;
 const { Content } = await render(entry);
 const region = await getEntry(entry.data.region);
-const [allVisualizations, allResources, allPublications] = await Promise.all([
+const [allVisualizations, allResources, allPublications, allStations] = await Promise.all([
   getCollection('visualizations', ({ data }) => data.status === 'published'),
   getCollection('resources', ({ data }) => data.status === 'published'),
   getCollection('publications', ({ data }) => data.status === 'published'),
+  getCollection('stations', ({ data }) => data.status === 'published'),
 ]);
 const visualizations = allVisualizations.filter(({ data }) => data.survey?.id === entry.id);
 const resources = allResources.filter(({ data }) => data.surveys.some(({ id }) => id === entry.id));
@@ -46,6 +48,7 @@ const activityLabel = entry.data.recordType === 'spatial-survey' && entry.data.o
   ? 'Soundscape mapping'
   : formatTerm(entry.data.recordType);
 const observationSites = entry.data.observationSites;
+const stationContinuations = await deriveStationContinuations(entry, allStations);
 const extent = entry.data.mapExtent ?? deriveExtent(observationSites);
 ---
 
@@ -104,7 +107,13 @@ const extent = entry.data.mapExtent ?? deriveExtent(observationSites);
     <ol class="observation-site-list">
       {observationSites.map((site, index) => <li>
         <span class="observation-site-index" aria-hidden="true">{String(index + 1).padStart(2, '0')}</span>
-        <strong>{site.name}</strong>
+        <div class="observation-site-details">
+          <strong>{site.name}</strong>
+          {stationContinuations.get(site.id)?.map((station) => <div class="observation-site-continuation">
+            <span>Continued as long-term monitoring</span>
+            <a href={stationUrl(station.id)}>Continued as long-term monitoring: {station.data.title} <span aria-hidden="true">→</span></a>
+          </div>)}
+        </div>
         {site.observedAt && <time datetime={site.observedAt.toISOString().slice(0, 10)}>{formatDate(site.observedAt)}</time>}
       </li>)}
     </ol>
