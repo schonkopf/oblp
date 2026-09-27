@@ -4,20 +4,17 @@ import ArrowLink from './ArrowLink.astro';
 
 interface Props {
   finding: CollectionEntry<'findings'>;
-  context: string[];
-  href: string;
-  linkLabel?: string;
-  marker?: string;
+  year?: number;
+  observations: Array<{ title: string; href: string }>;
 }
-const { finding, context, href, linkLabel = 'Trace the related research', marker = 'F–01' } = Astro.props;
+const { finding, year, observations } = Astro.props;
 ---
 <article class="finding-summary">
-  <div class="finding-index" aria-hidden="true">{marker}</div>
-  <div>
-    <p class="record-kicker">{finding.data.demo ? 'Demonstration finding' : 'Research finding'}</p>
-    <h3>{finding.data.title}</h3>
-    <p class="finding-statement">{finding.data.summary}</p>
-    {context.length > 0 && <p class="finding-context"><span>Connected observations</span> {context.join(' · ')}</p>}
-    <ArrowLink href={href} label={linkLabel} />
-  </div>
+  {year && <p class="finding-year">{year}</p>}
+  <p class="record-kicker">{finding.data.demo ? 'Demonstration finding' : 'Research finding'}</p>
+  <h3>{finding.data.title}</h3>
+  <p class="finding-statement">{finding.data.summary}</p>
+  {observations.length > 0 && <div class="finding-links">
+    {observations.map((observation) => <ArrowLink href={observation.href} label={`Open the connected observation: ${observation.title}`} />)}
+  </div>}
 </article>

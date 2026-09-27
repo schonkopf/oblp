@@ -1,7 +1,6 @@
 ---
 import { getCollection, getEntry } from 'astro:content';
 import BaseLayout from '../../layouts/BaseLayout.astro';
-import ArrowLink from '../../components/ArrowLink.astro';
 import ObservationHistory from '../../components/ObservationHistory.astro';
 import { stationUrl, surveyUrl, withBase } from '../../utils/urls';
 
@@ -59,7 +58,6 @@ const records = [
 ];
 const ecosystems = [...new Set(records.map((item) => item.ecosystem))];
 const regionNames = [...new Set(records.map((item) => item.region))];
-const observationTypes = [...new Set(records.flatMap((item) => item.observations))];
 const formatObservation = (value: string) => value === 'eDNA' ? value : value.replaceAll('-', ' ').replace(/\b\w/g, (letter) => letter.toUpperCase());
 const page = await getEntry('pages', 'explore');
 if (!page || page.data.pageType !== 'explore') throw new Error('Missing or invalid pages/explore content entry.');
@@ -81,7 +79,6 @@ if (!page || page.data.pageType !== 'explore') throw new Error('Missing or inval
     <div id="network-map" class="map" aria-label="Map of monitoring stations and survey observation locations"></div>
     <div class="explore-controls" aria-label="Filter observation records">
       <label class="search-field"><span>Search locations</span><input type="search" name="query" placeholder="Search by title, place, or method" /></label>
-      <label><span>Observation</span><select name="observation"><option value="">All types</option>{observationTypes.map((value) => <option value={value}>{formatObservation(value)}</option>)}</select></label>
       <label><span>Ecosystem</span><select name="ecosystem"><option value="">All ecosystems</option>{ecosystems.map((value) => <option value={value}>{value}</option>)}</select></label>
       <label><span>Region</span><select name="region"><option value="">All regions</option>{regionNames.map((value) => <option value={value}>{value}</option>)}</select></label>
       <button class="reset-button" type="button">Reset</button>
@@ -90,9 +87,8 @@ if (!page || page.data.pageType !== 'explore') throw new Error('Missing or inval
     <div class="location-list">
       {records.map((record) => <article class="location-card" data-record={JSON.stringify(record)}>
         <div class="location-meta"><span>{record.kind === 'station' ? '●' : '▰'} {record.recordLabel}</span><span>{record.region}</span></div>
-        <h2>{record.title}</h2><p>{record.summary}</p>
-        <ul class="mini-tags">{record.observations.map((value) => <li>{value}</li>)}<li>{record.ecosystem}</li></ul>
-        <ArrowLink href={record.url} label={`View ${record.kind}`} />
+        <h2><a href={record.url}>{record.title}</a></h2><p>{record.summary}</p>
+        <ul class="mini-tags">{record.observations.map((value) => <li>{formatObservation(value)}</li>)}</ul>
       </article>)}
       <p class="empty-state no-results" hidden>No records match these filters. Try broadening your search.</p>
     </div>
@@ -235,10 +231,9 @@ if (!page || page.data.pageType !== 'explore') throw new Error('Missing or inval
     }
     function update({ fitMap = false } = {}) {
       const query = explorer.querySelector('[name=query]').value.trim().toLowerCase();
-      const observation = explorer.querySelector('[name=observation]').value;
       const ecosystem = explorer.querySelector('[name=ecosystem]').value;
       const region = explorer.querySelector('[name=region]').value;
-      visibleRecords = records.filter((item) => (!query || `${item.title} ${item.summary} ${item.region} ${item.ecosystem}`.toLowerCase().includes(query)) && (!observation || item.observations.includes(observation)) && (!ecosystem || item.ecosystem === ecosystem) && (!region || item.region === region));
+      visibleRecords = records.filter((item) => (!query || `${item.title} ${item.summary} ${item.region} ${item.ecosystem} ${item.observations.join(' ')}`.toLowerCase().includes(query)) && (!ecosystem || item.ecosystem === ecosystem) && (!region || item.region === region));
       const visibleIds = new Set(visibleRecords.map((item) => item.id));
       cards.forEach((card) => { card.hidden = !visibleIds.has(JSON.parse(card.dataset.record).id); });
       status.textContent = `Showing ${visibleRecords.length} of ${records.length} records`;
