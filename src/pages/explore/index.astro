@@ -8,8 +8,8 @@ const stations = await getCollection('stations', ({ data }) => data.status === '
 const surveys = await getCollection('surveys', ({ data }) => data.status === 'published' && !data.demo);
 const regions = new Map((await getCollection('regions')).map((region) => [region.id, region.data.title]));
 const historyObservations = [
-  ...stations.filter(({ data }) => data.monitoringSince).map(({ id, data }) => ({ id, title: data.title, kind: 'station' as const, region: regions.get(data.region.id) ?? 'Not specified', startDate: data.monitoringSince!, url: stationUrl(id) })),
-  ...surveys.filter(({ data }) => data.startDate ?? data.monitoringSince).map(({ id, data }) => ({ id, title: data.title, kind: 'survey' as const, region: regions.get(data.region.id) ?? 'Not specified', startDate: (data.startDate ?? data.monitoringSince)!, url: surveyUrl(id) })),
+  ...stations.filter(({ data }) => data.monitoringSince).map(({ id, data }) => ({ id, title: data.title, kind: 'station' as const, region: regions.get(data.region.id) ?? 'Not specified', startDate: data.monitoringSince!, url: stationUrl(id), depthM: data.depthM })),
+  ...surveys.filter(({ data }) => data.startDate ?? data.monitoringSince).map(({ id, data }) => ({ id, title: data.title, kind: 'survey' as const, region: regions.get(data.region.id) ?? 'Not specified', startDate: (data.startDate ?? data.monitoringSince)!, url: surveyUrl(id), depthRangeM: data.depthRangeM })),
 ];
 const formatRecordType = (value: string) => {
   const labels: Record<string, string> = {
