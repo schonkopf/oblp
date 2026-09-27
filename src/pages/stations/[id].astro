@@ -45,7 +45,7 @@ const associatedResources = [
   ...publications.map(({ data }) => ({
     title: data.title,
     summary: data.summary,
-    typeLabel: 'Peer-reviewed article',
+    typeLabel: formatTerm(data.resourceType),
     href: data.url ?? data.doi,
     actionLabel: data.url || data.doi ? 'View publication' : undefined,
   })),

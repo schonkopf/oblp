@@ -11,10 +11,12 @@ const page = await getEntry('pages', 'resources');
 if (!page || page.data.pageType !== 'resources') throw new Error('Missing or invalid pages/resources content entry.');
 
 const resourceLabels = { publication: 'Publication', dataset: 'Dataset', software: 'Software', tutorial: 'Tutorial' } as const;
+const formatTerm = (value: string) => value.replaceAll('-', ' ').replace(/\b\w/g, (letter) => letter.toUpperCase());
 const records = [
   ...publications.map(({ id, data }) => ({
     id,
     kind: 'publication' as const,
+    typeLabel: formatTerm(data.resourceType),
     title: data.title,
     summary: data.summary,
     year: data.year,
@@ -30,6 +32,7 @@ const records = [
   ...reusableResources.map(({ id, data }) => ({
     id,
     kind: data.resourceType as 'dataset' | 'software' | 'tutorial',
+    typeLabel: resourceLabels[data.resourceType as 'dataset' | 'software' | 'tutorial'],
     title: data.title,
     summary: data.summary,
     year: undefined,
@@ -71,7 +74,7 @@ const counts = Object.fromEntries(categories.map(({ id }) => [id, records.filter
       {records.map((record) => {
         const searchable = [record.title, record.summary, record.authors?.join(' '), record.year, resourceLabels[record.kind], record.metadata, record.citation, record.repository].filter(Boolean).join(' ').toLocaleLowerCase();
         return <article class="resource-result" data-resource data-kind={record.kind} data-search={searchable}>
-          <div class="resource-result__meta"><span>{resourceLabels[record.kind]}</span>{record.year && <span>{record.year}</span>}</div>
+          <div class="resource-result__meta"><span>{record.typeLabel}</span>{record.year && <span>{record.year}</span>}</div>
           <h3>{record.title}</h3>
           {record.authors && <p class="resource-result__authors">{record.authors.join(', ')}</p>}
           <p class="resource-result__summary">{record.summary}</p>
