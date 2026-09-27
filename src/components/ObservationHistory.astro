@@ -131,6 +131,8 @@ const formatDate = new Intl.DateTimeFormat('en', { year: 'numeric', month: 'shor
   .history-marker { position: absolute; z-index: 1; top: calc(var(--lane) * 2.25rem); left: var(--position); display: grid; width: 1.35rem; height: 1.35rem; place-items: center; transform: translateX(-50%); color: inherit; text-decoration: none; }
   .history-marker__glyph { width: .65rem; height: .65rem; border: 1.5px solid var(--color-teal-600); background: #fff; transition: transform .15s ease, box-shadow .15s ease; }
   .history-marker--station .history-marker__glyph { border-color: var(--color-ocean-800); border-radius: 50%; background: var(--color-ocean-800); }
+  .history-marker__label { position: absolute; left: 1.15rem; width: 10rem; color: var(--color-muted); font-size: .62rem; line-height: 1.2; pointer-events: none; }
+  .history-marker:nth-of-type(even) .history-marker__label { right: 1.15rem; left: auto; text-align: right; }
   .history-marker:hover, .history-marker:focus-visible { z-index: 5; outline: none; }
   .history-marker:hover .history-marker__glyph, .history-marker:focus-visible .history-marker__glyph { transform: scale(1.35); box-shadow: 0 0 0 3px #fff, 0 0 0 4px var(--color-signal); }
   .history-tooltip { position: absolute; z-index: 6; top: 1.65rem; left: 50%; display: none; width: 14.5rem; padding: .7rem .8rem; transform: translateX(-50%); border: 1px solid var(--color-line); background: #fff; box-shadow: 0 7px 22px rgba(4,31,45,.13); color: var(--color-muted); font-size: .7rem; line-height: 1.45; }
