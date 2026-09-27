@@ -21,49 +21,39 @@ const { observations } = Astro.props;
 const start = Date.UTC(2000, 0, 1);
 const now = Date.now();
 const span = Math.max(1, now - start);
-const transformDepth = (depth: number) => Math.log10(depth + 1);
 const usableDepth = (depth: unknown): depth is number => typeof depth === 'number' && Number.isFinite(depth) && depth >= 0;
 
-const datedObservations = observations
+const points = observations
   .map((observation) => {
     const date = new Date(observation.startDate);
-    return { ...observation, date, timestamp: date.getTime() };
+    const range = observation.kind === 'survey' && observation.depthRangeM
+      && usableDepth(observation.depthRangeM.min) && usableDepth(observation.depthRangeM.max)
+      ? observation.depthRangeM
+      : undefined;
+    const singleDepth = observation.kind === 'station' && usableDepth(observation.depthM) ? observation.depthM : undefined;
+    const representativeDepth = range ? (range.min + range.max) / 2 : singleDepth;
+    const depthText = range
+      ? `Depth range: ${range.min}–${range.max} m`
+      : singleDepth !== undefined ? `Depth: ${singleDepth} m` : 'Depth not specified';
+    return { ...observation, date, timestamp: date.getTime(), representativeDepth, depthText };
   })
   .filter(({ timestamp }) => Number.isFinite(timestamp) && timestamp >= start && timestamp <= now)
-  .sort((a, b) => a.timestamp - b.timestamp);
+  .sort((a, b) => {
+    if (a.representativeDepth === undefined && b.representativeDepth !== undefined) return 1;
+    if (a.representativeDepth !== undefined && b.representativeDepth === undefined) return -1;
+    if (a.representativeDepth !== undefined && b.representativeDepth !== undefined) {
+      const depthDifference = a.representativeDepth - b.representativeDepth;
+      if (depthDifference !== 0) return depthDifference;
+    }
+    return a.timestamp - b.timestamp || a.title.localeCompare(b.title) || a.id.localeCompare(b.id);
+  })
+  .map((observation, lane) => {
+    const position = ((observation.timestamp - start) / span) * 100;
+    const tooltipEdge = position < 18 ? 'start' : position > 82 ? 'end' : 'center';
+    return { ...observation, position, lane, tooltipEdge };
+  });
 
-const depthValues = datedObservations.flatMap((observation) => {
-  if (observation.kind === 'station' && usableDepth(observation.depthM)) return [observation.depthM];
-  if (observation.kind === 'survey' && observation.depthRangeM && usableDepth(observation.depthRangeM.min) && usableDepth(observation.depthRangeM.max)) {
-    return [observation.depthRangeM.min, observation.depthRangeM.max];
-  }
-  return [];
-});
-const maximumTransformedDepth = Math.max(1, ...depthValues.map(transformDepth));
-const depthPosition = (depth: number) => (transformDepth(depth) / maximumTransformedDepth) * 100;
-
-const points = datedObservations.map((observation, index, all) => {
-  const position = ((observation.timestamp - start) / span) * 100;
-  const range = observation.kind === 'survey' && observation.depthRangeM
-    && usableDepth(observation.depthRangeM.min) && usableDepth(observation.depthRangeM.max)
-    ? observation.depthRangeM
-    : undefined;
-  const singleDepth = observation.kind === 'station' && usableDepth(observation.depthM) ? observation.depthM : undefined;
-  const depthTop = range ? depthPosition(range.min) : singleDepth !== undefined ? depthPosition(singleDepth) : undefined;
-  const depthBottom = range ? depthPosition(range.max) : depthTop;
-  const depthCenter = depthTop !== undefined && depthBottom !== undefined ? (depthTop + depthBottom) / 2 : undefined;
-  const nearbyEarlierPoints = all.slice(0, index).filter((candidate) => {
-    const candidatePosition = ((candidate.timestamp - start) / span) * 100;
-    return position - candidatePosition < 4;
-  }).length;
-  const tooltipEdge = position < 18 ? 'start' : position > 82 ? 'end' : 'center';
-  const depthText = range
-    ? `Depth range: ${range.min}–${range.max} m`
-    : singleDepth !== undefined ? `Depth: ${singleDepth} m` : 'Depth not specified';
-  return { ...observation, position, range, singleDepth, depthTop, depthBottom, depthCenter, depthText, labelOffset: nearbyEarlierPoints % 3, tooltipEdge };
-});
-
-const hasUnspecifiedDepth = points.some(({ depthCenter }) => depthCenter === undefined);
+const firstUnspecifiedLane = points.findIndex(({ representativeDepth }) => representativeDepth === undefined);
 const currentYear = new Date(now).getUTCFullYear();
 const tickYears = [2000, 2005, 2010, 2015, 2020, 2025].filter((year) => year < currentYear);
 const ticks = [
@@ -77,7 +67,7 @@ const formatDate = new Intl.DateTimeFormat('en', { year: 'numeric', month: 'shor
   <div class="observation-history__heading">
     <div>
       <p class="eyebrow">Observation history</p>
-      <h2 id="observation-history-heading" class="visually-hidden">Observation history by time and depth</h2>
+      <h2 id="observation-history-heading" class="visually-hidden">Observation history ordered by depth</h2>
     </div>
     <ul class="observation-history__legend" aria-label="Observation symbol legend">
       <li><span class="history-key history-key--station" aria-hidden="true"></span>Station</li>
@@ -85,23 +75,23 @@ const formatDate = new Intl.DateTimeFormat('en', { year: 'numeric', month: 'shor
     </ul>
   </div>
 
-  <div class="observation-history__viewport" tabindex="0" aria-label="Observation history from 2000 to now, with depth increasing downward; scroll horizontally on narrow screens">
-    <div class={`observation-history__plot ${hasUnspecifiedDepth ? 'has-unspecified-depth' : ''}`}>
+  <div class="observation-history__viewport" tabindex="0" aria-label="Observation history from 2000 to now; records are ordered from shallow to deep in separate lanes; scroll horizontally on narrow screens">
+    <div class="observation-history__plot" style={`--lane-count: ${points.length}`}>
       <div class="observation-history__ticks" aria-hidden="true">
         {ticks.map((tick) => <div class="history-tick" style={`--position: ${tick.position}%`}><span>{tick.label}</span></div>)}
       </div>
       <div class="observation-history__time-axis" aria-hidden="true"></div>
       <div class="observation-history__depth-axis" aria-hidden="true"><span>Depth</span><b>↓</b></div>
-      <div class="observation-history__depth-field">
-        {points.filter(({ depthCenter }) => depthCenter !== undefined).map((point) => (
+      <div class="observation-history__lanes">
+        {firstUnspecifiedLane >= 0 && <div class="observation-history__unspecified-divider" style={`--lane: ${firstUnspecifiedLane}`} aria-hidden="true"><span>Depth not specified</span></div>}
+        {points.map((point) => (
           <a
             class={`history-marker history-marker--${point.kind}`}
             href={point.url}
-            style={`--position: ${point.position}%; --depth-top: ${point.depthTop}%; --depth-bottom: ${point.depthBottom}%; --depth-center: ${point.depthCenter}%; --label-offset: ${point.labelOffset}`}
+            style={`--position: ${point.position}%; --lane: ${point.lane}`}
             aria-label={`${point.title}, ${point.kind === 'station' ? 'long-term monitoring station' : 'spatial survey'}, ${point.region}, ${point.depthText}, ${point.kind === 'station' ? 'since' : 'started'} ${formatDate.format(point.date)}`}
           >
             <span class="history-marker__glyph" aria-hidden="true"></span>
-            <span class="history-marker__label" aria-hidden="true">{point.title}</span>
             <span class={`history-tooltip history-tooltip--${point.tooltipEdge}`} role="tooltip">
               <strong>{point.title}</strong>
               <span>{point.kind === 'station' ? 'Long-term monitoring station' : 'Spatial survey'} · {point.region}</span>
@@ -112,24 +102,6 @@ const formatDate = new Intl.DateTimeFormat('en', { year: 'numeric', month: 'shor
           </a>
         ))}
       </div>
-      {hasUnspecifiedDepth && <div class="observation-history__unspecified">
-        <span class="observation-history__unspecified-label">Depth not specified</span>
-        {points.filter(({ depthCenter }) => depthCenter === undefined).map((point) => (
-          <a
-            class={`history-marker history-marker--${point.kind}`}
-            href={point.url}
-            style={`--position: ${point.position}%; --label-offset: ${point.labelOffset}`}
-            aria-label={`${point.title}, ${point.kind}, ${point.region}, depth not specified, began ${formatDate.format(point.date)}`}
-          >
-            <span class="history-marker__glyph" aria-hidden="true"></span>
-            <span class="history-marker__label" aria-hidden="true">{point.title}</span>
-            <span class={`history-tooltip history-tooltip--${point.tooltipEdge}`} role="tooltip">
-              <strong>{point.title}</strong><span>{point.kind === 'station' ? 'Station' : 'Survey'} · {point.region}</span>
-              <span>Depth not specified</span><time datetime={point.date.toISOString().slice(0, 10)}>Began {formatDate.format(point.date)}</time><b>View {point.kind} →</b>
-            </span>
-          </a>
-        ))}
-      </div>}
     </div>
   </div>
 </section>
@@ -142,43 +114,36 @@ const formatDate = new Intl.DateTimeFormat('en', { year: 'numeric', month: 'shor
   .observation-history__legend li { display: flex; align-items: center; gap: .4rem; }
   .history-key { display: inline-block; width: .65rem; height: .65rem; border: 1.5px solid var(--color-teal-600); }
   .history-key--station { border-color: var(--color-ocean-800); border-radius: 50%; background: var(--color-ocean-800); }
-  .history-key--survey { background: transparent; }
+  .history-key--survey { background: #fff; }
   .observation-history__viewport { max-width: 100%; margin-top: var(--space-4); overflow-x: auto; overflow-y: hidden; scrollbar-width: thin; }
   .observation-history__viewport:focus-visible { outline: 3px solid var(--color-signal); outline-offset: 3px; }
-  .observation-history__plot { position: relative; min-width: 48rem; height: 23.25rem; margin-inline: 2rem .45rem; }
-  .observation-history__ticks { position: absolute; inset: 0 0 auto; height: calc(100% - .75rem); }
+  .observation-history__plot { position: relative; min-width: 48rem; height: max(13rem, calc(8.25rem + var(--lane-count) * 2.25rem)); margin-inline: 2rem .45rem; }
+  .observation-history__ticks { position: absolute; inset: 0; }
   .history-tick { position: absolute; left: var(--position); height: 100%; border-left: 1px solid color-mix(in srgb, var(--color-line) 70%, transparent); }
   .history-tick:first-child span { transform: none; }
   .history-tick:last-child span { transform: translateX(-100%); }
   .history-tick span { position: absolute; top: 0; transform: translateX(-50%); color: var(--color-muted); font-size: .66rem; font-weight: 650; letter-spacing: .06em; text-transform: uppercase; white-space: nowrap; }
   .observation-history__time-axis { position: absolute; top: 2rem; right: 0; left: 0; height: 1px; background: var(--color-ocean-800); }
-  .observation-history__depth-axis { position: absolute; top: 3.2rem; bottom: 3.85rem; left: -1.65rem; display: flex; align-items: center; flex-direction: column; color: var(--color-muted); font-size: .6rem; letter-spacing: .13em; text-transform: uppercase; }
+  .observation-history__depth-axis { position: absolute; top: 3.2rem; bottom: 4rem; left: -1.65rem; display: flex; align-items: center; flex-direction: column; color: var(--color-muted); font-size: .6rem; letter-spacing: .13em; text-transform: uppercase; }
   .observation-history__depth-axis span { position: absolute; top: 50%; transform: translateY(-50%) rotate(-90deg); }
   .observation-history__depth-axis b { margin-top: auto; font-size: .8rem; font-weight: 400; }
-  .observation-history__depth-field { position: absolute; top: 3.2rem; right: 0; bottom: 3.85rem; left: 0; }
-  .history-marker { position: absolute; z-index: 1; left: var(--position); display: block; width: 1.35rem; color: inherit; text-decoration: none; transform: translateX(-50%); }
-  .observation-history__depth-field .history-marker { top: var(--depth-top); height: max(.5rem, calc(var(--depth-bottom) - var(--depth-top))); }
-  .history-marker__glyph { position: absolute; top: 0; left: 50%; display: block; width: .7rem; height: 100%; min-height: .5rem; transform: translateX(-50%); border: 1.5px solid var(--color-teal-600); background: #fff; transition: transform .15s ease, box-shadow .15s ease; }
-  .history-marker--station { height: .7rem !important; transform: translate(-50%, -50%); }
-  .history-marker--station .history-marker__glyph { height: .7rem; border-color: var(--color-ocean-800); border-radius: 50%; background: var(--color-ocean-800); }
-  .history-marker__label { position: absolute; top: calc(50% + (var(--label-offset) - 1) * .85rem); left: 1rem; width: 8.5rem; transform: translateY(-50%); color: var(--color-muted); font-size: .62rem; line-height: 1.15; pointer-events: none; }
-  .history-marker:nth-child(even) .history-marker__label { right: 1rem; left: auto; text-align: right; }
+  .observation-history__lanes { position: absolute; top: 3.2rem; right: 0; left: 0; }
+  .history-marker { position: absolute; z-index: 1; top: calc(var(--lane) * 2.25rem); left: var(--position); display: grid; width: 1.35rem; height: 1.35rem; place-items: center; transform: translateX(-50%); color: inherit; text-decoration: none; }
+  .history-marker__glyph { width: .65rem; height: .65rem; border: 1.5px solid var(--color-teal-600); background: #fff; transition: transform .15s ease, box-shadow .15s ease; }
+  .history-marker--station .history-marker__glyph { border-color: var(--color-ocean-800); border-radius: 50%; background: var(--color-ocean-800); }
   .history-marker:hover, .history-marker:focus-visible { z-index: 5; outline: none; }
-  .history-marker:hover .history-marker__glyph, .history-marker:focus-visible .history-marker__glyph { transform: translateX(-50%) scale(1.18); box-shadow: 0 0 0 3px #fff, 0 0 0 4px var(--color-signal); }
-  .history-tooltip { position: absolute; z-index: 6; top: calc(50% + 1rem); left: 50%; display: none; width: 14.5rem; padding: .7rem .8rem; transform: translateX(-50%); border: 1px solid var(--color-line); background: #fff; box-shadow: 0 7px 22px rgba(4,31,45,.13); color: var(--color-muted); font-size: .7rem; line-height: 1.45; }
+  .history-marker:hover .history-marker__glyph, .history-marker:focus-visible .history-marker__glyph { transform: scale(1.35); box-shadow: 0 0 0 3px #fff, 0 0 0 4px var(--color-signal); }
+  .history-tooltip { position: absolute; z-index: 6; top: 1.65rem; left: 50%; display: none; width: 14.5rem; padding: .7rem .8rem; transform: translateX(-50%); border: 1px solid var(--color-line); background: #fff; box-shadow: 0 7px 22px rgba(4,31,45,.13); color: var(--color-muted); font-size: .7rem; line-height: 1.45; }
   .history-tooltip--start { left: -.1rem; transform: none; }
   .history-tooltip--end { right: -.1rem; left: auto; transform: none; }
   .history-marker:hover .history-tooltip, .history-marker:focus .history-tooltip { display: grid; gap: .15rem; }
   .history-tooltip strong { color: var(--color-ink); font-family: var(--font-serif); font-size: .9rem; font-weight: 600; }
   .history-tooltip b { margin-top: .2rem; color: var(--color-teal-600); font-size: .68rem; }
-  .observation-history__unspecified { position: absolute; right: 0; bottom: .15rem; left: 0; height: 2.6rem; border-top: 1px solid var(--color-line); }
-  .observation-history__unspecified-label { position: absolute; top: .35rem; left: 0; color: var(--color-muted); font-size: .58rem; letter-spacing: .08em; text-transform: uppercase; }
-  .observation-history__unspecified .history-marker { top: 1.3rem; height: .7rem; }
-  .observation-history__unspecified .history-marker__label { display: none; }
+  .observation-history__unspecified-divider { position: absolute; top: calc(var(--lane) * 2.25rem - .45rem); right: 0; left: 0; border-top: 1px solid var(--color-line); }
+  .observation-history__unspecified-divider span { position: absolute; top: -.85rem; left: 0; padding-right: .4rem; background: #fff; color: var(--color-muted); font-size: .55rem; letter-spacing: .08em; text-transform: uppercase; }
   @media (max-width: 760px) {
     .observation-history { padding-block: var(--space-5); }
     .observation-history__heading { align-items: flex-start; flex-direction: column; gap: .7rem; }
     .observation-history__viewport { margin-right: -1rem; padding-right: 1rem; }
-    .observation-history__plot { min-width: 48rem; }
   }
 </style>
