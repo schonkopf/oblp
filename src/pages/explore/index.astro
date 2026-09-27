@@ -1,5 +1,5 @@
 ---
-import { getCollection, getEntry } from 'astro:content';
+import { getCollection, getEntry, type CollectionEntry } from 'astro:content';
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import ObservationHistory from '../../components/ObservationHistory.astro';
 import { stationUrl, surveyUrl, withBase } from '../../utils/urls';
@@ -39,8 +39,13 @@ const polygonCenter = (polygon: Array<[number, number]>): [number, number] => {
   const latitudes = polygon.map(([, latitude]) => latitude);
   return [(Math.min(...longitudes) + Math.max(...longitudes)) / 2, (Math.min(...latitudes) + Math.max(...latitudes)) / 2];
 };
+const year = (date: Date) => date.getUTCFullYear();
+const stationPeriod = (data: CollectionEntry<'stations'>['data']) => data.monitoringPeriod
+  ?? (data.monitoringSince ? `${year(data.monitoringSince)}–present` : undefined);
+const surveyPeriod = (data: CollectionEntry<'surveys'>['data']) => data.period
+  ?? (data.startDate ? `${year(data.startDate)}${data.endDate ? `–${year(data.endDate)}` : ''}` : undefined);
 const records = [
-  ...stations.map((entry) => ({ id: entry.id, title: entry.data.title, summary: entry.data.summary, kind: 'station', recordType: entry.data.recordType, recordLabel: formatRecordType(entry.data.recordType), observations: entry.data.observationTypes, ecosystem: entry.data.ecosystem ?? entry.data.habitat ?? 'Not specified', region: regions.get(entry.data.region.id) ?? 'Not specified', url: stationUrl(entry.id), geometry: entry.data.coordinates ? { type: 'Point', coordinates: [entry.data.coordinates.longitude, entry.data.coordinates.latitude] } : null, clusterLocation: entry.data.coordinates ? [entry.data.coordinates.longitude, entry.data.coordinates.latitude] : null })),
+  ...stations.map((entry) => ({ id: entry.id, title: entry.data.title, summary: entry.data.summary, kind: 'station', recordType: entry.data.recordType, recordLabel: formatRecordType(entry.data.recordType), period: stationPeriod(entry.data), observations: entry.data.observationTypes, ecosystem: entry.data.ecosystem ?? entry.data.habitat ?? 'Not specified', region: regions.get(entry.data.region.id) ?? 'Not specified', url: stationUrl(entry.id), geometry: entry.data.coordinates ? { type: 'Point', coordinates: [entry.data.coordinates.longitude, entry.data.coordinates.latitude] } : null, clusterLocation: entry.data.coordinates ? [entry.data.coordinates.longitude, entry.data.coordinates.latitude] : null })),
   ...surveys.map((entry) => {
     const extent = entry.data.mapExtent;
     const extentPolygon = extent ? [[extent.west, extent.south], [extent.east, extent.south], [extent.east, extent.north], [extent.west, extent.north], [extent.west, extent.south]] : null;
@@ -53,7 +58,7 @@ const records = [
     const geometry = observationSites.length
       ? { type: 'MultiPoint', coordinates: observationSites.map((site) => site.coordinates) }
       : polygon ? { type: 'Polygon', coordinates: [polygon] } : null;
-    return { id: entry.id, title: entry.data.title, summary: entry.data.summary, kind: 'survey', recordType: entry.data.recordType, recordLabel: formatRecordType(entry.data.recordType), observations: entry.data.observationTypes, ecosystem: entry.data.ecosystem ?? 'Not specified', region: regions.get(entry.data.region.id) ?? 'Not specified', url: surveyUrl(entry.id), geometry, clusterLocation, observationSites };
+    return { id: entry.id, title: entry.data.title, summary: entry.data.summary, kind: 'survey', recordType: entry.data.recordType, recordLabel: formatRecordType(entry.data.recordType), period: surveyPeriod(entry.data), observations: entry.data.observationTypes, ecosystem: entry.data.ecosystem ?? 'Not specified', region: regions.get(entry.data.region.id) ?? 'Not specified', url: surveyUrl(entry.id), geometry, clusterLocation, observationSites };
   }),
 ];
 const ecosystems = [...new Set(records.map((item) => item.ecosystem))];
@@ -118,6 +123,29 @@ if (!page || page.data.pageType !== 'explore') throw new Error('Missing or inval
     function sitePopupContent(item, site) {
       return `<strong>${escapeHtml(site.name)}</strong><br><span>Observation site within ${escapeHtml(item.title)}</span><p>${escapeHtml(item.recordLabel)}<br>${escapeHtml(item.region)}</p><a href="${escapeHtml(item.url)}">View survey &rarr;</a>`;
     }
+    function observationsAt(coordinates) {
+      const [longitude, latitude] = coordinates;
+      const matches = [];
+      visibleRecords.forEach((item) => {
+        if (item.kind === 'station' && item.clusterLocation?.[0] === longitude && item.clusterLocation?.[1] === latitude) {
+          matches.push({ item, label: item.recordLabel });
+        }
+        item.observationSites?.forEach((site) => {
+          if (site.coordinates[0] === longitude && site.coordinates[1] === latitude) {
+            matches.push({ item, site, label: 'Survey observation site' });
+          }
+        });
+      });
+      return matches;
+    }
+    function colocatedPopupContent(matches) {
+      const records = matches.map(({ item, site, label }) => `<li>${item.period ? `<span>${escapeHtml(item.period)}</span><br>` : ''}<span>${escapeHtml(label)}${site ? ` · ${escapeHtml(site.name)}` : ''}</span><br><strong>${escapeHtml(item.title)}</strong><br><a href="${escapeHtml(item.url)}">View ${escapeHtml(item.kind)}: ${escapeHtml(item.title)} &rarr;</a></li>`).join('');
+      return `<strong>Observation history</strong><ul class="map-observation-history">${records}</ul>`;
+    }
+    function popupAt(coordinates, fallback) {
+      const matches = observationsAt(coordinates);
+      return matches.length > 1 ? colocatedPopupContent(matches) : fallback;
+    }
     function bindObservation(layer, item) {
       layer.bindPopup(popupContent(item));
       layer.bindTooltip(`${item.title} — ${item.recordLabel}`);
@@ -134,13 +162,15 @@ if (!page || page.data.pageType !== 'explore') throw new Error('Missing or inval
     function observationLayer(item, compact = false) {
       const [longitude, latitude] = item.clusterLocation;
       if (item.kind === 'station') {
-        return bindObservation(L.circleMarker([latitude, longitude], {
+        const marker = bindObservation(L.circleMarker([latitude, longitude], {
           radius: compact ? 7 : 9,
           color: 'var(--map-marker-halo)',
           weight: 3,
           fillColor: 'var(--map-station)',
           fillOpacity: 1,
         }), item);
+        marker.bindPopup(popupAt(item.clusterLocation, popupContent(item)));
+        return marker;
       }
       if (compact) {
         return bindObservation(L.marker([latitude, longitude], {
@@ -156,7 +186,7 @@ if (!page || page.data.pageType !== 'explore') throw new Error('Missing or inval
             title: `${site.name}, observation site within ${item.title}`,
             icon: L.divIcon({ className: 'survey-observation-icon', html: '<span aria-hidden="true"></span>', iconSize: [18, 18], iconAnchor: [9, 9] }),
           });
-          marker.bindPopup(sitePopupContent(item, site));
+          marker.bindPopup(popupAt(site.coordinates, sitePopupContent(item, site)));
           marker.bindTooltip(`${site.name} — ${item.title}`);
           marker.on('add', () => marker.getElement()?.setAttribute('aria-label', `${site.name}, observation site within ${item.title}`));
           return marker;

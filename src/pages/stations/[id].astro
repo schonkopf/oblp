@@ -4,7 +4,8 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
 import DemoNotice from '../../components/DemoNotice.astro';
 import InteractiveEmbed from '../../components/InteractiveEmbed.astro';
 import AssociatedResources from '../../components/AssociatedResources.astro';
-import { withBase } from '../../utils/urls';
+import { resolveObservationOrigin } from '../../utils/observationLineage';
+import { surveyUrl, withBase } from '../../utils/urls';
 
 export async function getStaticPaths() {
   const entries = await getCollection('stations', ({ data }) => data.status === 'published');
@@ -15,6 +16,7 @@ interface Props { entry: CollectionEntry<'stations'>; }
 const { entry } = Astro.props;
 const { Content } = await render(entry);
 const region = await getEntry(entry.data.region);
+const origin = await resolveObservationOrigin(entry);
 
 const [allAudio, allVisualizations, allResources, allPublications, allPartners] = await Promise.all([
   getCollection('audio', ({ data }) => data.status === 'published'),
@@ -33,6 +35,11 @@ const spectrograms = visualizations.filter(({ data }) => data.visualizationType 
 const habitatVisualizations = visualizations.filter(({ data }) => data.visualizationType === 'photogrammetry');
 
 const formatDate = (date: Date) => new Intl.DateTimeFormat('en', { year: 'numeric', month: 'long', day: 'numeric', timeZone: 'UTC' }).format(date);
+const formatYear = (date: Date) => new Intl.DateTimeFormat('en', { year: 'numeric', timeZone: 'UTC' }).format(date);
+const originPeriod = origin?.survey.data.period
+  ?? (origin?.survey.data.startDate
+    ? `${formatYear(origin.survey.data.startDate)}${origin.survey.data.endDate ? `–${formatYear(origin.survey.data.endDate)}` : ''}`
+    : undefined);
 const formatTerm = (value: string) => value === 'eDNA' ? value : value.replaceAll('-', ' ').replace(/\b\w/g, (letter) => letter.toUpperCase());
 const associatedResources = [
   ...resources.map(({ data }) => ({
@@ -98,6 +105,21 @@ const aboutText = entry.data.description;
       {(entry.data.media.caption || entry.data.media.credit) && <figcaption>{entry.data.media.caption}{entry.data.media.caption && entry.data.media.credit && ' '}{entry.data.media.credit && <span>Credit: {entry.data.media.credit}</span>}</figcaption>}
     </figure>}
   </section>
+
+  {origin && <section class="observation-lineage shell" aria-labelledby="observation-history-heading">
+    <p class="eyebrow">Observation history</p>
+    <div class="observation-lineage__layout">
+      <div>
+        <h2 id="observation-history-heading">Earlier observation</h2>
+        <p>This long-term monitoring station developed from the {origin.observationSite.name} observation site within an earlier survey.</p>
+      </div>
+      <div class="observation-lineage__record">
+        <strong>{origin.survey.data.title}</strong>
+        {originPeriod && <span>{originPeriod}</span>}
+        <a href={surveyUrl(origin.survey.id)}>View the earlier survey: {origin.survey.data.title} <span aria-hidden="true">→</span></a>
+      </div>
+    </div>
+  </section>}
 
   {audio.length > 0 && <section class="station-section station-section--tint" aria-labelledby="listen-heading"><div class="shell">
     <div class="station-section__heading"><p class="eyebrow">Example audio</p><h2 id="listen-heading" class="visually-hidden">Example audio</h2></div>

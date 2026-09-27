@@ -60,6 +60,10 @@ const stations = defineCollection({
     methods: z.array(z.string()).default([]),
     media: mediaAsset.optional(),
     partners: z.array(reference('partners')).default([]),
+    origin: z.object({
+      survey: reference('surveys'),
+      observationSite: z.string().trim().min(1),
+    }).optional(),
   }),
 });
 
