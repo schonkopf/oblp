@@ -5,6 +5,7 @@ status: published
 demo: true
 authors: ["Demo Author"]
 year: 2026
+resourceType: "peer-reviewed-article"
 venue: "Demonstration venue"
 journal: "Demonstration Journal of Ecoacoustics"
 doi: "https://doi.org/10.0000/demo.oblp"

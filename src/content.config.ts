@@ -74,6 +74,17 @@ const surveys = defineCollection({
     startDate: z.coerce.date().optional(),
     endDate: z.coerce.date().optional(),
     observationTypes: z.array(observationType).default(['soundscape']),
+    observationSites: z.array(z.object({
+      id: z.string().min(1),
+      name: z.string().min(1),
+      coordinates: z.object({
+        latitude: z.number().min(-90).max(90),
+        longitude: z.number().min(-180).max(180),
+      }),
+      observedAt: z.coerce.date().optional(),
+      observationTypes: z.array(observationType).default(['soundscape']),
+      coordinateStatus: z.enum(['verified', 'approximate']).default('verified'),
+    })).default([]),
     ecosystem: z.string().optional(),
     habitat: z.array(z.string().min(1)).default([]),
     marineProtectedArea: z.boolean().optional(),
@@ -147,6 +158,7 @@ const publications = defineCollection({
   schema: common.extend({
     authors: z.array(z.string()).min(1),
     year: z.number().int().min(1900).max(2100),
+    resourceType: z.enum(['peer-reviewed-article', 'book-chapter', 'conference-paper', 'report']),
     venue: z.string().optional(),
     journal: z.string().optional(),
     doi: z.url().optional(),

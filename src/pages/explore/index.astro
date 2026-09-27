@@ -10,7 +10,7 @@ const surveys = await getCollection('surveys', ({ data }) => data.status === 'pu
 const regions = new Map((await getCollection('regions')).map((region) => [region.id, region.data.title]));
 const historyObservations = [
   ...stations.filter(({ data }) => data.monitoringSince).map(({ id, data }) => ({ id, title: data.title, kind: 'station' as const, region: regions.get(data.region.id) ?? 'Not specified', startDate: data.monitoringSince!, url: stationUrl(id) })),
-  ...surveys.filter(({ data }) => data.monitoringSince).map(({ id, data }) => ({ id, title: data.title, kind: 'survey' as const, region: regions.get(data.region.id) ?? 'Not specified', startDate: data.monitoringSince!, url: surveyUrl(id) })),
+  ...surveys.filter(({ data }) => data.startDate ?? data.monitoringSince).map(({ id, data }) => ({ id, title: data.title, kind: 'survey' as const, region: regions.get(data.region.id) ?? 'Not specified', startDate: (data.startDate ?? data.monitoringSince)!, url: surveyUrl(id) })),
 ];
 const formatRecordType = (value: string) => {
   const labels: Record<string, string> = {
@@ -45,11 +45,16 @@ const records = [
   ...surveys.map((entry) => {
     const extent = entry.data.mapExtent;
     const extentPolygon = extent ? [[extent.west, extent.south], [extent.east, extent.south], [extent.east, extent.north], [extent.west, extent.north], [extent.west, extent.south]] : null;
-    const polygon = extentPolygon ?? (entry.data.polygon ? [...entry.data.polygon, entry.data.polygon[0]] : null);
-    const clusterLocation = extent
-      ? [(extent.west + extent.east) / 2, (extent.south + extent.north) / 2]
-      : entry.data.polygon ? polygonCenter(entry.data.polygon) : null;
-    return { id: entry.id, title: entry.data.title, summary: entry.data.summary, kind: 'survey', recordType: entry.data.recordType, recordLabel: formatRecordType(entry.data.recordType), observations: entry.data.observationTypes, ecosystem: entry.data.ecosystem ?? 'Not specified', region: regions.get(entry.data.region.id) ?? 'Not specified', url: surveyUrl(entry.id), geometry: polygon ? { type: 'Polygon', coordinates: [polygon] } : null, clusterLocation };
+    const polygon = entry.data.polygon ? [...entry.data.polygon, entry.data.polygon[0]] : extentPolygon;
+    const observationSites = entry.data.observationSites.map((site) => ({ id: site.id, name: site.name, coordinates: [site.coordinates.longitude, site.coordinates.latitude], observedAt: site.observedAt?.toISOString() }));
+    const clusterLocation = observationSites.length
+      ? [observationSites.reduce((sum, site) => sum + site.coordinates[0], 0) / observationSites.length, observationSites.reduce((sum, site) => sum + site.coordinates[1], 0) / observationSites.length]
+      : entry.data.polygon ? polygonCenter(entry.data.polygon)
+      : extent ? [(extent.west + extent.east) / 2, (extent.south + extent.north) / 2] : null;
+    const geometry = observationSites.length
+      ? { type: 'MultiPoint', coordinates: observationSites.map((site) => site.coordinates) }
+      : polygon ? { type: 'Polygon', coordinates: [polygon] } : null;
+    return { id: entry.id, title: entry.data.title, summary: entry.data.summary, kind: 'survey', recordType: entry.data.recordType, recordLabel: formatRecordType(entry.data.recordType), observations: entry.data.observationTypes, ecosystem: entry.data.ecosystem ?? 'Not specified', region: regions.get(entry.data.region.id) ?? 'Not specified', url: surveyUrl(entry.id), geometry, clusterLocation, observationSites };
   }),
 ];
 const ecosystems = [...new Set(records.map((item) => item.ecosystem))];
@@ -73,7 +78,7 @@ if (!page || page.data.pageType !== 'explore') throw new Error('Missing or inval
   {historyObservations.length > 0 && <ObservationHistory observations={historyObservations} />}
   <section class="listing shell explorer" data-explorer>
     <h2 class="visually-hidden">Observation directory</h2>
-    <div id="network-map" class="map" aria-label="Map of monitoring stations and survey areas"></div>
+    <div id="network-map" class="map" aria-label="Map of monitoring stations and survey observation locations"></div>
     <div class="explore-controls" aria-label="Filter observation records">
       <label class="search-field"><span>Search locations</span><input type="search" name="query" placeholder="Search by title, place, or method" /></label>
       <label><span>Observation</span><select name="observation"><option value="">All types</option>{observationTypes.map((value) => <option value={value}>{formatObservation(value)}</option>)}</select></label>
@@ -100,7 +105,7 @@ if (!page || page.data.pageType !== 'explore') throw new Error('Missing or inval
     let map;
     let layerGroup;
     let visibleRecords = records;
-    const closeZoom = 9;
+    const closeZoom = 11;
     const clusterRadius = 72;
     const escapeHtml = (value) => String(value).replace(/[&<>'"]/g, (char) => ({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[char]));
     function initMap() {
@@ -113,6 +118,9 @@ if (!page || page.data.pageType !== 'explore') throw new Error('Missing or inval
     }
     function popupContent(item) {
       return `<strong>${escapeHtml(item.title)}</strong><br><span>${escapeHtml(item.recordLabel)}</span><p>${escapeHtml(item.summary)}</p><a href="${escapeHtml(item.url)}">View ${escapeHtml(item.kind)} &rarr;</a>`;
+    }
+    function sitePopupContent(item, site) {
+      return `<strong>${escapeHtml(site.name)}</strong><br><span>Observation site within ${escapeHtml(item.title)}</span><p>${escapeHtml(item.recordLabel)}<br>${escapeHtml(item.region)}</p><a href="${escapeHtml(item.url)}">View survey &rarr;</a>`;
     }
     function bindObservation(layer, item) {
       layer.bindPopup(popupContent(item));
@@ -143,6 +151,20 @@ if (!page || page.data.pageType !== 'explore') throw new Error('Missing or inval
           title: `${item.title}, ${item.recordLabel}`,
           icon: L.divIcon({ className: 'survey-location-icon', html: '<span aria-hidden="true"></span>', iconSize: [22, 22], iconAnchor: [11, 11] }),
         }), item);
+      }
+      if (item.observationSites?.length) {
+        return L.featureGroup(item.observationSites.map((site) => {
+          const [siteLongitude, siteLatitude] = site.coordinates;
+          const marker = L.marker([siteLatitude, siteLongitude], {
+            keyboard: true,
+            title: `${site.name}, observation site within ${item.title}`,
+            icon: L.divIcon({ className: 'survey-observation-icon', html: '<span aria-hidden="true"></span>', iconSize: [18, 18], iconAnchor: [9, 9] }),
+          });
+          marker.bindPopup(sitePopupContent(item, site));
+          marker.bindTooltip(`${site.name} — ${item.title}`);
+          marker.on('add', () => marker.getElement()?.setAttribute('aria-label', `${site.name}, observation site within ${item.title}`));
+          return marker;
+        }));
       }
       return bindObservation(L.geoJSON({ type: 'Feature', properties: item, geometry: item.geometry }, {
         style: { color: 'var(--map-survey-outline)', weight: 4, opacity: 1, fillColor: 'var(--map-survey-fill)', fillOpacity: .22 },

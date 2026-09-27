@@ -36,7 +36,7 @@ const associatedResources = [
   ...publications.map(({ data }) => ({
     title: data.title,
     summary: data.summary,
-    typeLabel: 'Peer-reviewed article',
+    typeLabel: formatTerm(data.resourceType),
     href: data.url ?? data.doi,
     actionLabel: data.url || data.doi ? 'View publication' : undefined,
   })),
@@ -45,6 +45,7 @@ const activityLabel = entry.data.recordType === 'spatial-survey' && entry.data.o
   ? 'Soundscape mapping'
   : formatTerm(entry.data.recordType);
 const extent = entry.data.mapExtent;
+const observationSites = entry.data.observationSites;
 ---
 
 <BaseLayout title={entry.data.title} description={entry.data.summary}>
@@ -57,6 +58,8 @@ const extent = entry.data.mapExtent;
         <p class="lede">{entry.data.summary}</p>
       </div>
       <dl class="station-vitals" aria-label="Key survey facts">
+        {entry.data.period && <div><dt>Survey period</dt><dd>{entry.data.period}</dd></div>}
+        {!entry.data.period && entry.data.startDate && <div><dt>Survey began</dt><dd>{formatDate(entry.data.startDate)}</dd></div>}
         {entry.data.monitoringStatus && <div><dt>Monitoring status</dt><dd>{formatTerm(entry.data.monitoringStatus)}</dd></div>}
         {entry.data.monitoringSince && <div><dt>Monitoring since</dt><dd>{formatDate(entry.data.monitoringSince)}</dd></div>}
       </dl>
@@ -93,12 +96,27 @@ const extent = entry.data.mapExtent;
     </figure>}
   </section>
 
-  <section class="station-section station-section--tint station-media-section" aria-labelledby="observations-heading"><div class="shell">
+  {observationSites.length > 0 && <section class="station-section station-section--tint" aria-labelledby="sites-heading"><div class="shell">
+    <div class="station-section__heading">
+      <p class="eyebrow">Observation sites</p>
+      <h2 id="sites-heading" class="visually-hidden">Short-term observation sites</h2>
+      <p class="observation-sites-intro">{observationSites.length} observation {observationSites.length === 1 ? 'location belongs' : 'locations belong'} to this single survey record.</p>
+    </div>
+    <ol class="observation-site-list">
+      {observationSites.map((site, index) => <li>
+        <span class="observation-site-index" aria-hidden="true">{String(index + 1).padStart(2, '0')}</span>
+        <strong>{site.name}</strong>
+        {site.observedAt && <time datetime={site.observedAt.toISOString().slice(0, 10)}>{formatDate(site.observedAt)}</time>}
+      </li>)}
+    </ol>
+  </div></section>}
+
+  {visualizations.length > 0 && <section class="station-section station-section--tint station-media-section" aria-labelledby="observations-heading"><div class="shell">
     <div class="station-section__heading station-section__heading--wide">
       <p class="eyebrow">Spatial observations</p>
       <h2 id="observations-heading" class="visually-hidden">Spatial observations</h2>
     </div>
-    {visualizations.length > 0 ? visualizations.map(({ data }) => <article class="visualization-record">
+    {visualizations.map(({ data }) => <article class="visualization-record">
       <div class="visualization-intro">
         <div><h3>{data.title}</h3><p>{data.description ?? data.summary}</p></div>
         {data.interpretation && <aside><h4>Interpretation</h4><p>{data.interpretation}</p></aside>}
@@ -106,8 +124,8 @@ const extent = entry.data.mapExtent;
       {data.src && data.format === 'interactive-html' && <InteractiveEmbed src={data.src} title={data.title} />}
       {data.src && data.format === 'image' && <img class="visualization-image" src={withBase(data.src)} alt={data.title} loading="lazy" />}
       {data.src && data.format === 'external' && <p><a class="button" href={data.src} target="_blank" rel="noopener">Open visualization <span aria-hidden="true">↗</span></a></p>}
-    </article>) : <p class="dataset-empty">Coming soon.</p>}
-  </div></section>
+    </article>)}
+  </div></section>}
 
   <AssociatedResources resources={associatedResources} />
 </BaseLayout>
