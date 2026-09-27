@@ -17,6 +17,7 @@ doi: "https://doi.org/10.1016/j.marenvres.2025.107461"
 citation: "Mattos, F. M. G., Mulla, A. J., Fong, C.-L., Lee, C.-H., Nozawa, Y., & Lin, T.-H. (2025). Environmental and acoustic drivers of fish recruitment along degraded coral reefs. Marine Environmental Research, 211, 107461."
 relatedSurveys:
   - "recruitment-lyudao"
+  - "recruitment-xiaoliuqiu"
 ---
 
 This study compares environmental and acoustic predictors of reef fish recruitment across contrasting reef conditions.

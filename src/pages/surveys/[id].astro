@@ -4,6 +4,7 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
 import DemoNotice from '../../components/DemoNotice.astro';
 import InteractiveEmbed from '../../components/InteractiveEmbed.astro';
 import AssociatedResources from '../../components/AssociatedResources.astro';
+import { deriveExtent } from '../../utils/surveyExtent';
 import { withBase } from '../../utils/urls';
 
 export async function getStaticPaths() {
@@ -44,8 +45,8 @@ const associatedResources = [
 const activityLabel = entry.data.recordType === 'spatial-survey' && entry.data.observationTypes.includes('soundscape')
   ? 'Soundscape mapping'
   : formatTerm(entry.data.recordType);
-const extent = entry.data.mapExtent;
 const observationSites = entry.data.observationSites;
+const extent = entry.data.mapExtent ?? deriveExtent(observationSites);
 ---
 
 <BaseLayout title={entry.data.title} description={entry.data.summary}>
@@ -79,7 +80,6 @@ const observationSites = entry.data.observationSites;
       </div>
       <dl class="station-metadata">
         {extent && <div><dt>Survey extent</dt><dd>{extent.south.toFixed(3)}–{extent.north.toFixed(3)}° N · {extent.west.toFixed(3)}–{extent.east.toFixed(3)}° E</dd></div>}
-        {!extent && entry.data.period && <div><dt>Survey period</dt><dd>{entry.data.period}</dd></div>}
         {entry.data.ecosystem && <div><dt>Ecosystem</dt><dd>{entry.data.ecosystem}</dd></div>}
         {entry.data.habitat.length > 0 && <div><dt>Habitats</dt><dd>{entry.data.habitat.join(' · ')}</dd></div>}
         {entry.data.depthRangeM && <div><dt>Depth range</dt><dd>{entry.data.depthRangeM.min}–{entry.data.depthRangeM.max} m</dd></div>}
@@ -87,7 +87,6 @@ const observationSites = entry.data.observationSites;
         {entry.data.observationTypes.length > 0 && <div><dt>Observations</dt><dd>{entry.data.observationTypes.map(formatTerm).join(' · ')}</dd></div>}
         {entry.data.instrumentation.length > 0 && <div><dt>Instrumentation</dt><dd>{entry.data.instrumentation.join(' · ')}</dd></div>}
         {entry.data.deploymentConfiguration && <div><dt>Deployment</dt><dd>{entry.data.deploymentConfiguration}</dd></div>}
-        {entry.data.methods.length > 0 && <div><dt>Methods</dt><dd>{entry.data.methods.join(' · ')}</dd></div>}
       </dl>
     </div>
     {entry.data.media && <figure class="station-field-image">

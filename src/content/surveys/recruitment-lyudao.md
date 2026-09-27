@@ -26,30 +26,37 @@ observationSites:
   - id: "gueywan"
     name: "Gueywan"
     coordinates: { latitude: 22.638, longitude: 121.473 }
+    coordinateStatus: "approximate"
     observedAt: 2022-05-17
   - id: "shilan"
     name: "Shilan"
     coordinates: { latitude: 22.671, longitude: 121.496 }
+    coordinateStatus: "approximate"
     observedAt: 2022-05-19
   - id: "dabaisha"
     name: "Dabaisha"
     coordinates: { latitude: 22.640, longitude: 121.483 }
+    coordinateStatus: "approximate"
     observedAt: 2023-06-06
   - id: "zhongliao"
     name: "Zhongliao"
     coordinates: { latitude: 22.676, longitude: 121.494 }
+    coordinateStatus: "approximate"
     observedAt: 2022-06-11
   - id: "chaikou"
     name: "Chaikou"
     coordinates: { latitude: 22.676, longitude: 121.472 }
+    coordinateStatus: "approximate"
     observedAt: 2022-06-12
   - id: "gongguan"
     name: "Gongguan"
     coordinates: { latitude: 22.677, longitude: 121.487 }
+    coordinateStatus: "approximate"
     observedAt: 2022-06-13
   - id: "wenquan-yugang"
     name: "Wenquan yugang"
     coordinates: { latitude: 22.672, longitude: 121.505 }
+    coordinateStatus: "approximate"
     observedAt: 2022-05-22
     
 instrumentation:
