@@ -5,6 +5,7 @@ status: published
 demo: false
 surveys:
   - "recruitment-lyudao"
+  - "recruitment-xiaoliuqiu"
 publication: "mattos-et-al-2025-fish-recruitment"
 featured: false
 ---
