@@ -92,7 +92,6 @@ const formatDate = new Intl.DateTimeFormat('en', { year: 'numeric', month: 'shor
             aria-label={`${point.title}, ${point.kind === 'station' ? 'long-term monitoring station' : 'spatial survey'}, ${point.region}, ${point.depthText}, ${point.kind === 'station' ? 'since' : 'started'} ${formatDate.format(point.date)}`}
           >
             <span class="history-marker__glyph" aria-hidden="true"></span>
-            <span class="history-marker__label" aria-hidden="true">{point.title}</span>
             <span class={`history-tooltip history-tooltip--${point.tooltipEdge}`} role="tooltip">
               <strong>{point.title}</strong>
               <span>{point.kind === 'station' ? 'Long-term monitoring station' : 'Spatial survey'} · {point.region}</span>
