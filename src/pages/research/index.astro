@@ -2,22 +2,23 @@
 import { getCollection, getEntry } from 'astro:content';
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import FindingSummary from '../../components/FindingSummary.astro';
-import { stationUrl, surveyUrl, withBase } from '../../utils/urls';
+import { stationUrl, surveyUrl } from '../../utils/urls';
 
 const findings = await getCollection('findings', ({ data }) => data.status === 'published' && !data.demo);
-const stations = new Map((await getCollection('stations')).map((entry) => [entry.id, entry.data.title]));
-const surveys = new Map((await getCollection('surveys')).map((entry) => [entry.id, entry.data.title]));
-const regions = new Map((await getCollection('regions')).map((entry) => [entry.id, entry.data.title]));
-const publications = new Map((await getCollection('publications')).map((entry) => [entry.id, entry.data.title]));
-const visualizations = new Map((await getCollection('visualizations')).map((entry) => [entry.id, entry.data.title]));
+const stations = new Map((await getCollection('stations')).map((entry) => [entry.id, entry.data]));
+const surveys = new Map((await getCollection('surveys')).map((entry) => [entry.id, entry.data]));
+const publications = new Map((await getCollection('publications')).map((entry) => [entry.id, entry.data]));
 const page = await getEntry('pages', 'research');
 if (!page || page.data.pageType !== 'research') throw new Error('Missing or invalid pages/research content entry.');
 ---
 <BaseLayout title={page.data.title} description={page.data.description}>
   <section class="page-hero page-hero--dark"><div class="shell"><p class="eyebrow">{page.data.eyebrow}</p><h1>{page.data.heroTitle}</h1><p class="lede">{page.data.heroText}</p></div></section>
-  <section class="evidence-section"><div class="shell"><div class="finding-list">{findings.map((finding, index) => {
-    const context = [...finding.data.regions.map((item) => regions.get(item.id) ?? item.id), ...finding.data.stations.map((item) => stations.get(item.id) ?? item.id), ...finding.data.surveys.map((item) => surveys.get(item.id) ?? item.id), ...(finding.data.publication ? [`Publication: ${publications.get(finding.data.publication.id) ?? finding.data.publication.id}`] : []), ...(finding.data.visualization ? [`Visualization: ${visualizations.get(finding.data.visualization.id) ?? finding.data.visualization.id}`] : [])];
-    const href = finding.data.stations[0] ? stationUrl(finding.data.stations[0].id) : finding.data.surveys[0] ? surveyUrl(finding.data.surveys[0].id) : withBase('explore/');
-    return <FindingSummary finding={finding} context={context} href={href} linkLabel="Open a connected observation" marker={`F–${String(index + 1).padStart(2, '0')}`} />;
+  <section class="evidence-section"><div class="shell"><div class="finding-list">{findings.map((finding) => {
+    const observations = [
+      ...finding.data.stations.map(({ id }) => ({ title: stations.get(id)?.title ?? id, href: stationUrl(id) })),
+      ...finding.data.surveys.map(({ id }) => ({ title: surveys.get(id)?.title ?? id, href: surveyUrl(id) })),
+    ];
+    const year = finding.data.publication ? publications.get(finding.data.publication.id)?.year : undefined;
+    return <FindingSummary finding={finding} year={year} observations={observations} />;
   })}</div></div></section>
 </BaseLayout>
