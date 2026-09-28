@@ -118,12 +118,10 @@ if (!page || page.data.pageType !== 'explore') throw new Error('Missing or inval
         maxZoom: 18,
         attribution: '&copy; OpenStreetMap contributors',
       });
-      // Blue Marble is a stable, cloud-free composite. Level 8 is the imagery's native
-      // limit; Leaflet may overzoom those pixels so the observation map remains usable.
-      const satelliteLayer = L.tileLayer('https://gibs.earthdata.nasa.gov/wmts/epsg3857/best/BlueMarble_NextGeneration/default/GoogleMapsCompatible_Level8/{z}/{y}/{x}.jpeg', {
-        maxNativeZoom: 8,
+      const satelliteLayer = L.tileLayer('https://tiles.maps.eox.at/wmts/1.0.0/s2cloudless-2020_3857/default/g/{z}/{y}/{x}.jpg', {
+        maxNativeZoom: 14,
         maxZoom: 18,
-        attribution: '<a href="https://www.earthdata.nasa.gov/data/tools/gibs">NASA Blue Marble imagery via NASA EOSDIS GIBS</a>',
+        attribution: '<a href="https://s2maps.eu">Sentinel-2 cloudless</a> by <a href="https://eox.at">EOX IT Services GmbH</a> (Contains modified Copernicus Sentinel data 2020)',
       });
       basemaps = { map: osmLayer, satellite: satelliteLayer };
       basemaps[activeBasemap].addTo(map);
