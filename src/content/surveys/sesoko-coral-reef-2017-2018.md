@@ -55,7 +55,6 @@ instrumentation:
   - "AUSOMS-mini stereo recorder"
 
 deploymentConfiguration: "Bottom-mounted autonomous stereo recording"
-monitoringStatus: "completed"
 
 updated: 2026-09-27
 ---
