@@ -135,19 +135,19 @@ if (!page || page.data.pageType !== 'explore') throw new Error('Missing or inval
       addBasemapControl();
       const coralAtlasAttribution = 'Habitat maps &copy; <a href="https://allencoralatlas.org/">Allen Coral Atlas Partnership and Arizona State University</a> (CC BY 4.0)';
       const coralAtlasOptions = {
-        // The Atlas advertises both versions. 1.1.1 avoids WMS 1.3 axis-order
-        // ambiguity and matches Leaflet's EPSG:3857 tile BBOX order.
-        version: '1.1.1',
+        version: '2.0.0',
         crs: L.CRS.EPSG3857,
         format: 'image/png',
         transparent: true,
+        // This generic style is browser-verified; replace it only when the
+        // Atlas's official categorical habitat style has been verified.
+        styles: 'polygon',
         opacity: 0.72,
         pane: 'habitatPane',
         attribution: coralAtlasAttribution,
       };
       habitatLayers = {
-        benthic: L.tileLayer.wms('https://allencoralatlas.org/geoserver/ows', { ...coralAtlasOptions, layers: 'global:aca_benthic' }),
-        geomorphic: L.tileLayer.wms('https://allencoralatlas.org/geoserver/ows', { ...coralAtlasOptions, layers: 'global:aca_geomorphic' }),
+        benthic: L.tileLayer.wms('https://allencoralatlas.org/geoserver/ows', { ...coralAtlasOptions, layers: 'coral-atlas:benthic_data_verbose' }),
       };
       addHabitatControl();
       layerGroup = L.featureGroup().addTo(map);
@@ -190,6 +190,9 @@ if (!page || page.data.pageType !== 'explore') throw new Error('Missing or inval
             const checkbox = L.DomUtil.create('input', '', label);
             checkbox.type = 'checkbox';
             checkbox.dataset.habitat = id;
+            // Keep the existing control visible without requesting an
+            // unverified geomorphic WMS layer.
+            checkbox.disabled = !habitatLayers[id];
             const text = L.DomUtil.create('span', '', label);
             text.textContent = labelText;
             L.DomEvent.on(checkbox, 'change', () => toggleHabitat(id, checkbox.checked));
