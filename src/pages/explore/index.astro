@@ -148,6 +148,7 @@ if (!page || page.data.pageType !== 'explore') throw new Error('Missing or inval
       };
       habitatLayers = {
         benthic: L.tileLayer.wms('https://allencoralatlas.org/geoserver/ows', { ...coralAtlasOptions, layers: 'coral-atlas:benthic_data_verbose' }),
+        geomorphic: L.tileLayer.wms('https://allencoralatlas.org/geoserver/ows', { ...coralAtlasOptions, layers: 'coral-atlas:geomorphic_data_verbose' }),
       };
       addHabitatControl();
       layerGroup = L.featureGroup().addTo(map);
@@ -190,8 +191,7 @@ if (!page || page.data.pageType !== 'explore') throw new Error('Missing or inval
             const checkbox = L.DomUtil.create('input', '', label);
             checkbox.type = 'checkbox';
             checkbox.dataset.habitat = id;
-            // Keep the existing control visible without requesting an
-            // unverified geomorphic WMS layer.
+            // Keep unavailable habitat controls visible but disabled.
             checkbox.disabled = !habitatLayers[id];
             const text = L.DomUtil.create('span', '', label);
             text.textContent = labelText;
