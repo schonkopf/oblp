@@ -135,7 +135,9 @@ if (!page || page.data.pageType !== 'explore') throw new Error('Missing or inval
       addBasemapControl();
       const coralAtlasAttribution = 'Habitat maps &copy; <a href="https://allencoralatlas.org/">Allen Coral Atlas Partnership and Arizona State University</a> (CC BY 4.0)';
       const coralAtlasOptions = {
-        version: '1.3.0',
+        // The Atlas advertises both versions. 1.1.1 avoids WMS 1.3 axis-order
+        // ambiguity and matches Leaflet's EPSG:3857 tile BBOX order.
+        version: '1.1.1',
         crs: L.CRS.EPSG3857,
         format: 'image/png',
         transparent: true,
@@ -149,8 +151,9 @@ if (!page || page.data.pageType !== 'explore') throw new Error('Missing or inval
       };
       addHabitatControl();
       layerGroup = L.featureGroup().addTo(map);
-      map.on('zoomend', renderMap);
-      update({ fitMap: true });
+      map.on('zoomend', renderObservationLayers);
+      updateFilters();
+      fitMapToVisibleRecords();
     }
     function addBasemapControl() {
       const BasemapControl = L.Control.extend({
@@ -336,7 +339,7 @@ if (!page || page.data.pageType !== 'explore') throw new Error('Missing or inval
       });
       marker.addTo(layerGroup);
     }
-    function renderMap() {
+    function renderObservationLayers() {
       if (!map) return;
       layerGroup.clearLayers();
       const located = visibleRecords.filter((item) => item.clusterLocation && item.geometry);
@@ -349,13 +352,13 @@ if (!page || page.data.pageType !== 'explore') throw new Error('Missing or inval
         else observationLayer(items[0], true).addTo(layerGroup);
       });
     }
-    function fitVisibleRecords() {
+    function fitMapToVisibleRecords() {
       const layers = visibleRecords.filter((item) => item.geometry && item.clusterLocation).map((item) => L.geoJSON({ type: 'Feature', properties: item, geometry: item.geometry }));
       if (!layers.length) return;
       const bounds = L.featureGroup(layers).getBounds();
       if (bounds.isValid()) map.fitBounds(bounds, { padding: [30, 30], maxZoom: 7 });
     }
-    function update({ fitMap = false } = {}) {
+    function updateFilters({ fitMap = false } = {}) {
       const query = explorer.querySelector('[name=query]').value.trim().toLowerCase();
       const ecosystem = explorer.querySelector('[name=ecosystem]').value;
       const region = explorer.querySelector('[name=region]').value;
@@ -365,11 +368,11 @@ if (!page || page.data.pageType !== 'explore') throw new Error('Missing or inval
       status.textContent = `Showing ${visibleRecords.length} of ${records.length} records`;
       noResults.hidden = visibleRecords.length !== 0;
       if (!map) return;
-      renderMap();
-      if (fitMap) fitVisibleRecords();
+      renderObservationLayers();
+      if (fitMap) fitMapToVisibleRecords();
     }
-    explorer.addEventListener('input', () => update({ fitMap: true }));
-    explorer.querySelector('.reset-button').addEventListener('click', () => { explorer.querySelectorAll('input, select').forEach((input) => input.value = ''); update({ fitMap: true }); });
+    explorer.querySelector('.explore-controls').addEventListener('input', () => updateFilters({ fitMap: true }));
+    explorer.querySelector('.reset-button').addEventListener('click', () => { explorer.querySelectorAll('.explore-controls input, .explore-controls select').forEach((input) => input.value = ''); updateFilters({ fitMap: true }); });
     const leaflet = document.createElement('script'); leaflet.src = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js'; leaflet.crossOrigin = 'anonymous'; leaflet.onload = initMap; document.head.append(leaflet);
   </script>
 </BaseLayout>
