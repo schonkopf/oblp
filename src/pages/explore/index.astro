@@ -121,7 +121,7 @@ if (!page || page.data.pageType !== 'explore') throw new Error('Missing or inval
       // A fixed, published date makes the daily GIBS layer deterministic and avoids
       // requesting imagery before it is available. Level 9 is the imagery's native
       // limit; Leaflet may overzoom those pixels so the observation map remains usable.
-      const satelliteLayer = L.tileLayer('https://gibs.earthdata.nasa.gov/wmts/epsg3857/best/VIIRS_SNPP_CorrectedReflectance_TrueColor/default/2024-06-01/GoogleMapsCompatible_Level9/{z}/{y}/{x}.jpg', {
+      const satelliteLayer = L.tileLayer('https://gibs.earthdata.nasa.gov/wmts/epsg3857/best/VIIRS_SNPP_CorrectedReflectance_TrueColor/default/2024-06-15/GoogleMapsCompatible_Level9/{z}/{y}/{x}.jpg', {
         maxNativeZoom: 9,
         maxZoom: 18,
         attribution: 'Imagery by <a href="https://www.earthdata.nasa.gov/data/tools/gibs">NASA EOSDIS GIBS</a>',
