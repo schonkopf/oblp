@@ -50,6 +50,8 @@ const activityLabel = entry.data.recordType === 'spatial-survey' && entry.data.o
 const observationSites = entry.data.observationSites;
 const stationContinuations = await deriveStationContinuations(entry, allStations);
 const extent = entry.data.mapExtent ?? deriveExtent(observationSites);
+const isOngoing = entry.data.monitoringStatus === 'ongoing' && !entry.data.endDate;
+const showMonitoringSince = entry.data.monitoringSince && !entry.data.period && !entry.data.startDate;
 ---
 
 <BaseLayout title={entry.data.title} description={entry.data.summary}>
@@ -64,8 +66,8 @@ const extent = entry.data.mapExtent ?? deriveExtent(observationSites);
       <dl class="station-vitals" aria-label="Key survey facts">
         {entry.data.period && <div><dt>Survey period</dt><dd>{entry.data.period}</dd></div>}
         {!entry.data.period && entry.data.startDate && <div><dt>Survey began</dt><dd>{formatDate(entry.data.startDate)}</dd></div>}
-        {entry.data.monitoringStatus && <div><dt>Monitoring status</dt><dd>{formatTerm(entry.data.monitoringStatus)}</dd></div>}
-        {entry.data.monitoringSince && <div><dt>Monitoring since</dt><dd>{formatDate(entry.data.monitoringSince)}</dd></div>}
+        {isOngoing && <div><dt>Monitoring status</dt><dd>Ongoing</dd></div>}
+        {showMonitoringSince && <div><dt>Monitoring since</dt><dd>{formatDate(entry.data.monitoringSince!)}</dd></div>}
       </dl>
     </div>
   </header>
