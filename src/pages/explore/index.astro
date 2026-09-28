@@ -105,6 +105,8 @@ if (!page || page.data.pageType !== 'explore') throw new Error('Missing or inval
     const noResults = explorer.querySelector('.no-results');
     let map;
     let layerGroup;
+    let basemaps;
+    let activeBasemap = 'map';
     let visibleRecords = records;
     const closeZoom = 11;
     const clusterRadius = 72;
@@ -112,10 +114,55 @@ if (!page || page.data.pageType !== 'explore') throw new Error('Missing or inval
     function initMap() {
       if (!window.L) return;
       map = L.map('network-map', { scrollWheelZoom: true }).setView([43, -54], 3);
-      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 18, attribution: '&copy; OpenStreetMap contributors' }).addTo(map);
+      const osmLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        maxZoom: 18,
+        attribution: '&copy; OpenStreetMap contributors',
+      });
+      // A fixed, published date makes the daily GIBS layer deterministic and avoids
+      // requesting imagery before it is available. Level 9 is the imagery's native
+      // limit; Leaflet may overzoom those pixels so the observation map remains usable.
+      const satelliteLayer = L.tileLayer('https://gibs.earthdata.nasa.gov/wmts/epsg3857/best/VIIRS_SNPP_CorrectedReflectance_TrueColor/default/2024-06-01/GoogleMapsCompatible_Level9/{z}/{y}/{x}.jpg', {
+        maxNativeZoom: 9,
+        maxZoom: 18,
+        attribution: 'Imagery by <a href="https://www.earthdata.nasa.gov/data/tools/gibs">NASA EOSDIS GIBS</a>',
+      });
+      basemaps = { map: osmLayer, satellite: satelliteLayer };
+      basemaps[activeBasemap].addTo(map);
+      addBasemapControl();
       layerGroup = L.featureGroup().addTo(map);
       map.on('zoomend', renderMap);
       update({ fitMap: true });
+    }
+    function addBasemapControl() {
+      const BasemapControl = L.Control.extend({
+        options: { position: 'topright' },
+        onAdd() {
+          const container = L.DomUtil.create('div', 'basemap-switch leaflet-bar');
+          container.setAttribute('role', 'group');
+          container.setAttribute('aria-label', 'Basemap');
+          [['map', 'Map'], ['satellite', 'Satellite']].forEach(([id, label]) => {
+            const button = L.DomUtil.create('button', 'basemap-switch__button', container);
+            button.type = 'button';
+            button.textContent = label;
+            button.dataset.basemap = id;
+            button.setAttribute('aria-pressed', String(id === activeBasemap));
+            L.DomEvent.on(button, 'click', () => selectBasemap(id, container));
+          });
+          L.DomEvent.disableClickPropagation(container);
+          L.DomEvent.disableScrollPropagation(container);
+          return container;
+        },
+      });
+      new BasemapControl().addTo(map);
+    }
+    function selectBasemap(nextBasemap, control) {
+      if (nextBasemap === activeBasemap || !basemaps[nextBasemap]) return;
+      map.removeLayer(basemaps[activeBasemap]);
+      basemaps[nextBasemap].addTo(map);
+      activeBasemap = nextBasemap;
+      control.querySelectorAll('[data-basemap]').forEach((button) => {
+        button.setAttribute('aria-pressed', String(button.dataset.basemap === activeBasemap));
+      });
     }
     function popupContent(item) {
       return `<strong>${escapeHtml(item.title)}</strong><br><span>${escapeHtml(item.recordLabel)}</span><p>${escapeHtml(item.summary)}</p><a href="${escapeHtml(item.url)}">View ${escapeHtml(item.kind)} &rarr;</a>`;
