@@ -148,7 +148,6 @@ if (!page || page.data.pageType !== 'explore') throw new Error('Missing or inval
       };
       habitatLayers = {
         benthic: L.tileLayer.wms('https://allencoralatlas.org/geoserver/ows', { ...coralAtlasOptions, layers: 'coral-atlas:benthic_data_verbose' }),
-        geomorphic: L.tileLayer.wms('https://allencoralatlas.org/geoserver/ows', { ...coralAtlasOptions, layers: 'coral-atlas:geomorphic_data_verbose' }),
       };
       addHabitatControl();
       layerGroup = L.featureGroup().addTo(map);
@@ -186,7 +185,7 @@ if (!page || page.data.pageType !== 'explore') throw new Error('Missing or inval
           container.setAttribute('aria-label', 'Reef habitat layers');
           const legend = L.DomUtil.create('legend', 'habitat-control__title', container);
           legend.textContent = 'Reef habitat';
-          [['benthic', 'Benthic habitat'], ['geomorphic', 'Geomorphic zones']].forEach(([id, labelText]) => {
+          [['benthic', 'Benthic habitat']].forEach(([id, labelText]) => {
             const label = L.DomUtil.create('label', 'habitat-control__option', container);
             const checkbox = L.DomUtil.create('input', '', label);
             checkbox.type = 'checkbox';
