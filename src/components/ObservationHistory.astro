@@ -49,8 +49,7 @@ const points = observations
   })
   .map((observation, lane) => {
     const position = ((observation.timestamp - start) / span) * 100;
-    const tooltipEdge = position < 18 ? 'start' : position > 82 ? 'end' : 'center';
-    return { ...observation, position, lane, tooltipEdge };
+    return { ...observation, position, lane };
   });
 
 const firstUnspecifiedLane = points.findIndex(({ representativeDepth }) => representativeDepth === undefined);
@@ -89,22 +88,89 @@ const formatDate = new Intl.DateTimeFormat('en', { year: 'numeric', month: 'shor
             class={`history-marker history-marker--${point.kind}`}
             href={point.url}
             style={`--position: ${point.position}%; --lane: ${point.lane}`}
+            data-history-marker={point.lane}
+            aria-describedby={`history-tooltip-${point.lane}`}
             aria-label={`${point.title}, ${point.kind === 'station' ? 'long-term monitoring station' : 'spatial survey'}, ${point.region}, ${point.depthText}, ${point.kind === 'station' ? 'since' : 'started'} ${formatDate.format(point.date)}`}
           >
             <span class="history-marker__glyph" aria-hidden="true"></span>
-            <span class={`history-tooltip history-tooltip--${point.tooltipEdge}`} role="tooltip">
-              <strong>{point.title}</strong>
-              <span>{point.kind === 'station' ? 'Long-term monitoring station' : 'Spatial survey'} · {point.region}</span>
-              <span>{point.depthText}</span>
-              <time datetime={point.date.toISOString().slice(0, 10)}>{point.kind === 'station' ? 'Since' : 'Started'} {formatDate.format(point.date)}</time>
-              <b>View {point.kind} →</b>
-            </span>
           </a>
         ))}
       </div>
     </div>
   </div>
+  <div class="observation-history__tooltip-layer">
+    {points.map((point) => (
+      <span id={`history-tooltip-${point.lane}`} class="history-tooltip" data-history-tooltip={point.lane} role="tooltip" hidden>
+        <strong>{point.title}</strong>
+        <span>{point.kind === 'station' ? 'Long-term monitoring station' : 'Spatial survey'} · {point.region}</span>
+        <span>{point.depthText}</span>
+        <time datetime={point.date.toISOString().slice(0, 10)}>{point.kind === 'station' ? 'Since' : 'Started'} {formatDate.format(point.date)}</time>
+        <b>View {point.kind} →</b>
+      </span>
+    ))}
+  </div>
 </section>
+
+<script>
+  document.querySelectorAll<HTMLElement>('.observation-history').forEach((history) => {
+    const markers = history.querySelectorAll<HTMLElement>('[data-history-marker]');
+    let activeMarker: HTMLElement | null = null;
+    let activeTooltip: HTMLElement | null = null;
+    const offset = 10;
+    const pageInset = 8;
+
+    const placeTooltip = () => {
+      if (!activeMarker || !activeTooltip) return;
+      const marker = activeMarker.getBoundingClientRect();
+      const tooltip = activeTooltip.getBoundingClientRect();
+      const section = history.getBoundingClientRect();
+      const topBound = Math.max(pageInset, section.top);
+      const bottomBound = Math.min(window.innerHeight - pageInset, section.bottom);
+      const leftBound = Math.max(pageInset, section.left);
+      const rightBound = Math.min(window.innerWidth - pageInset, section.right);
+      const markerY = marker.top + marker.height / 2;
+      const opensAbove = markerY > topBound + (bottomBound - topBound) / 2;
+      const opensLeft = rightBound - marker.right < tooltip.width + offset;
+      const preferredTop = opensAbove ? marker.top - tooltip.height - offset : marker.bottom + offset;
+      const preferredLeft = opensLeft ? marker.left - tooltip.width - offset : marker.right + offset;
+
+      activeTooltip.classList.toggle('history-tooltip--above', opensAbove);
+      activeTooltip.classList.toggle('history-tooltip--left', opensLeft);
+      activeTooltip.style.top = `${Math.min(Math.max(preferredTop, topBound), bottomBound - tooltip.height)}px`;
+      activeTooltip.style.left = `${Math.min(Math.max(preferredLeft, leftBound), rightBound - tooltip.width)}px`;
+      activeTooltip.style.visibility = 'visible';
+    };
+
+    const showTooltip = (marker: HTMLElement) => {
+      const key = marker.dataset.historyMarker;
+      const tooltip = key === undefined ? null : history.querySelector<HTMLElement>(`[data-history-tooltip="${key}"]`);
+      if (!tooltip) return;
+      if (activeTooltip && activeTooltip !== tooltip) activeTooltip.hidden = true;
+      activeMarker = marker;
+      activeTooltip = tooltip;
+      tooltip.style.visibility = 'hidden';
+      tooltip.hidden = false;
+      placeTooltip();
+    };
+
+    const hideTooltip = (marker: HTMLElement) => {
+      if (activeMarker !== marker || !activeTooltip) return;
+      activeTooltip.hidden = true;
+      activeMarker = null;
+      activeTooltip = null;
+    };
+
+    markers.forEach((marker) => {
+      marker.addEventListener('mouseenter', () => showTooltip(marker));
+      marker.addEventListener('mouseleave', () => hideTooltip(marker));
+      marker.addEventListener('focus', () => showTooltip(marker));
+      marker.addEventListener('blur', () => hideTooltip(marker));
+    });
+    history.querySelector('.observation-history__viewport')?.addEventListener('scroll', placeTooltip, { passive: true });
+    window.addEventListener('scroll', placeTooltip, { passive: true });
+    window.addEventListener('resize', placeTooltip, { passive: true });
+  });
+</script>
 
 <style>
   .observation-history { padding-block: var(--space-6); border-bottom: 1px solid var(--color-line); }
@@ -135,10 +201,8 @@ const formatDate = new Intl.DateTimeFormat('en', { year: 'numeric', month: 'shor
   .history-marker:nth-of-type(even) .history-marker__label { right: 1.15rem; left: auto; text-align: right; }
   .history-marker:hover, .history-marker:focus-visible { z-index: 5; outline: none; }
   .history-marker:hover .history-marker__glyph, .history-marker:focus-visible .history-marker__glyph { transform: scale(1.35); box-shadow: 0 0 0 3px #fff, 0 0 0 4px var(--color-signal); }
-  .history-tooltip { position: absolute; z-index: 6; top: 1.65rem; left: 50%; display: none; width: 14.5rem; padding: .7rem .8rem; transform: translateX(-50%); border: 1px solid var(--color-line); background: #fff; box-shadow: 0 7px 22px rgba(4,31,45,.13); color: var(--color-muted); font-size: .7rem; line-height: 1.45; }
-  .history-tooltip--start { left: -.1rem; transform: none; }
-  .history-tooltip--end { right: -.1rem; left: auto; transform: none; }
-  .history-marker:hover .history-tooltip, .history-marker:focus .history-tooltip { display: grid; gap: .15rem; }
+  .observation-history__tooltip-layer { position: fixed; z-index: 20; inset: 0; overflow: visible; pointer-events: none; }
+  .history-tooltip { position: fixed; display: grid; width: 14.5rem; padding: .7rem .8rem; gap: .15rem; border: 1px solid var(--color-line); background: #fff; box-shadow: 0 7px 22px rgba(4,31,45,.13); color: var(--color-muted); font-size: .7rem; line-height: 1.45; }
   .history-tooltip strong { color: var(--color-ink); font-family: var(--font-serif); font-size: .9rem; font-weight: 600; }
   .history-tooltip b { margin-top: .2rem; color: var(--color-teal-600); font-size: .68rem; }
   .observation-history__unspecified-divider { position: absolute; top: calc(var(--lane) * 2.25rem - .45rem); right: 0; left: 0; border-top: 1px solid var(--color-line); }
