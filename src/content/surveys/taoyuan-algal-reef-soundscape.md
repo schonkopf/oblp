@@ -17,25 +17,45 @@ observationTypes:
 
 observationSites:
   - id: "by"
-    name: "BY"
+    name: "Baiyu — BY"
+    coordinates:
+      latitude: 25.059
+      longitude: 121.089
     observationTypes:
       - "soundscape"
+    coordinateStatus: "verified"
   - id: "g1"
-    name: "G1"
+    name: "Datan — G1"
+    coordinates:
+      latitude: 25.044
+      longitude: 121.057
     observationTypes:
       - "soundscape"
+    coordinateStatus: "verified"
   - id: "g2"
-    name: "G2"
+    name: "Datan — G2"
+    coordinates:
+      latitude: 25.038
+      longitude: 121.051
     observationTypes:
       - "soundscape"
+    coordinateStatus: "verified"
   - id: "yx"
-    name: "YX"
+    name: "Yongxin — YX"
+    coordinates:
+      latitude: 25.008
+      longitude: 121.026
     observationTypes:
       - "soundscape"
+    coordinateStatus: "verified"
   - id: "ya"
-    name: "YA"
+    name: "Yongan — YA"
+    coordinates:
+      latitude: 24.998
+      longitude: 121.020
     observationTypes:
       - "soundscape"
+    coordinateStatus: "verified"
 
 instrumentation:
   - "SoundTrap 300STD"
@@ -48,7 +68,7 @@ methods:
   - "Acoustic source separation"
 ---
 
-The Taoyuan Algal Reef is an intertidal crustose-coralline-algal reef ecosystem along the northwestern coast of Taiwan. The acoustic survey covered five physical reef locations—BY, G1, G2, YX, and YA—during repeated survey rounds.
+The Taoyuan Algal Reef is an intertidal crustose-coralline-algal reef ecosystem along the northwestern coast of Taiwan. Five intertidal recording sites were distributed along the Taoyuan coast: Baiyu (BY), two sites at Datan (G1 and G2), Yongxin (YX), and Yongan (YA).
 
 Autonomous SoundTrap 300STD recorders were fixed vertically to angle steel on the reef bottom. Each recorder collected five-minute, single-channel recordings at 96 kHz. Because low tide exposed the instruments to air, underwater observations were limited to approximately three hours before and after high water.
 
