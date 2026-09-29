@@ -141,11 +141,22 @@ const formatDate = new Intl.DateTimeFormat('en', { year: 'numeric', month: 'shor
       activeTooltip.style.visibility = 'visible';
     };
 
+    const hideActiveTooltip = () => {
+      if (!activeTooltip) return;
+      activeTooltip.hidden = true;
+      activeTooltip.style.removeProperty('visibility');
+      activeTooltip.style.removeProperty('top');
+      activeTooltip.style.removeProperty('left');
+      activeTooltip.classList.remove('history-tooltip--above', 'history-tooltip--left');
+      activeMarker = null;
+      activeTooltip = null;
+    };
+
     const showTooltip = (marker: HTMLElement) => {
       const key = marker.dataset.historyMarker;
       const tooltip = key === undefined ? null : history.querySelector<HTMLElement>(`[data-history-tooltip="${key}"]`);
       if (!tooltip) return;
-      if (activeTooltip && activeTooltip !== tooltip) activeTooltip.hidden = true;
+      hideActiveTooltip();
       activeMarker = marker;
       activeTooltip = tooltip;
       tooltip.style.visibility = 'hidden';
@@ -155,9 +166,7 @@ const formatDate = new Intl.DateTimeFormat('en', { year: 'numeric', month: 'shor
 
     const hideTooltip = (marker: HTMLElement) => {
       if (activeMarker !== marker || !activeTooltip) return;
-      activeTooltip.hidden = true;
-      activeMarker = null;
-      activeTooltip = null;
+      hideActiveTooltip();
     };
 
     markers.forEach((marker) => {
@@ -202,7 +211,8 @@ const formatDate = new Intl.DateTimeFormat('en', { year: 'numeric', month: 'shor
   .history-marker:hover, .history-marker:focus-visible { z-index: 5; outline: none; }
   .history-marker:hover .history-marker__glyph, .history-marker:focus-visible .history-marker__glyph { transform: scale(1.35); box-shadow: 0 0 0 3px #fff, 0 0 0 4px var(--color-signal); }
   .observation-history__tooltip-layer { position: fixed; z-index: 20; inset: 0; overflow: visible; pointer-events: none; }
-  .history-tooltip { position: fixed; display: grid; width: 14.5rem; padding: .7rem .8rem; gap: .15rem; border: 1px solid var(--color-line); background: #fff; box-shadow: 0 7px 22px rgba(4,31,45,.13); color: var(--color-muted); font-size: .7rem; line-height: 1.45; }
+  .history-tooltip { position: fixed; width: 14.5rem; padding: .7rem .8rem; gap: .15rem; border: 1px solid var(--color-line); background: #fff; box-shadow: 0 7px 22px rgba(4,31,45,.13); color: var(--color-muted); font-size: .7rem; line-height: 1.45; }
+  .history-tooltip:not([hidden]) { display: grid; }
   .history-tooltip strong { color: var(--color-ink); font-family: var(--font-serif); font-size: .9rem; font-weight: 600; }
   .history-tooltip b { margin-top: .2rem; color: var(--color-teal-600); font-size: .68rem; }
   .observation-history__unspecified-divider { position: absolute; top: calc(var(--lane) * 2.25rem - .45rem); right: 0; left: 0; border-top: 1px solid var(--color-line); }
