@@ -111,6 +111,7 @@ const showMonitoringSince = entry.data.monitoringSince && !entry.data.period && 
         <span class="observation-site-index" aria-hidden="true">{String(index + 1).padStart(2, '0')}</span>
         <div class="observation-site-details">
           <strong>{site.name}</strong>
+          {site.depthM !== undefined && <span>{site.depthM} m</span>}
           {stationContinuations.get(site.id)?.map((station) => <div class="observation-site-continuation">
             <span>Continued as long-term monitoring</span>
             <a href={stationUrl(station.id)}>Continued as long-term monitoring: {station.data.title} <span aria-hidden="true">→</span></a>
