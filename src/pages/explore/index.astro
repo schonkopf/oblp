@@ -116,7 +116,6 @@ if (!page || page.data.pageType !== 'explore') throw new Error('Missing or inval
     const fallbackDetailZoom = 11;
     const clusterRadius = 72;
     const escapeHtml = (value) => String(value).replace(/[&<>'"]/g, (char) => ({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[char]));
-    const formatMapDate = (value) => new Intl.DateTimeFormat('en', { year: 'numeric', month: 'long', day: 'numeric', timeZone: 'UTC' }).format(new Date(value));
     function initMap() {
       if (!window.L) return;
       map = L.map('network-map', { scrollWheelZoom: true }).setView([43, -54], 3);
@@ -221,8 +220,7 @@ if (!page || page.data.pageType !== 'explore') throw new Error('Missing or inval
       return `<strong>${escapeHtml(item.title)}</strong><br><span>${escapeHtml(item.recordLabel)}</span><p>${escapeHtml(item.summary)}</p><a href="${escapeHtml(item.url)}">View ${escapeHtml(item.kind)} &rarr;</a>`;
     }
     function sitePopupContent(item, site) {
-      const details = [site.depthM !== undefined ? `${site.depthM} m` : '', site.observedAt ? formatMapDate(site.observedAt) : ''].filter(Boolean).map((detail) => escapeHtml(detail)).join('<br>');
-      return `<strong>${escapeHtml(site.name)}</strong><br><span>Observation site within ${escapeHtml(item.title)}</span>${details ? `<p>${details}</p>` : ''}<a href="${escapeHtml(item.url)}">View survey &rarr;</a>`;
+      return `<strong>${escapeHtml(site.name)}</strong><p>Observation site within ${escapeHtml(item.title)}</p><a href="${escapeHtml(item.url)}">View survey &rarr;</a>`;
     }
     function physicalLocations(items = visibleRecords) {
       return items.flatMap((item) => item.mapLocations.map((location) => ({ ...location, item })));
@@ -235,8 +233,7 @@ if (!page || page.data.pageType !== 'explore') throw new Error('Missing or inval
     }
     function colocatedPopupContent(matches) {
       const records = matches.map(({ item, site, label }) => {
-        const siteDetails = site ? [site.depthM !== undefined ? `${site.depthM} m` : '', site.observedAt ? formatMapDate(site.observedAt) : ''].filter(Boolean).map(escapeHtml).join(' · ') : '';
-        return `<li>${item.period ? `<span>${escapeHtml(item.period)}</span><br>` : ''}<span>${escapeHtml(label)}${site ? ` · ${escapeHtml(site.name)}` : ''}</span>${siteDetails ? `<br><span>${siteDetails}</span>` : ''}<br><strong>${escapeHtml(item.title)}</strong><br><a href="${escapeHtml(item.url)}">View ${escapeHtml(item.kind)}: ${escapeHtml(item.title)} &rarr;</a></li>`;
+        return `<li>${item.period ? `<span>${escapeHtml(item.period)}</span><br>` : ''}<span>${escapeHtml(label)}${site ? ` · ${escapeHtml(site.name)}` : ''}</span><br><strong>${escapeHtml(item.title)}</strong><br><a href="${escapeHtml(item.url)}">View ${escapeHtml(item.kind)}: ${escapeHtml(item.title)} &rarr;</a></li>`;
       }).join('');
       return `<strong>Observation history</strong><ul class="map-observation-history">${records}</ul>`;
     }
