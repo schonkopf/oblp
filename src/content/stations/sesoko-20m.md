@@ -17,9 +17,9 @@ coordinates:
   latitude: 26.665
   longitude: 127.869
 
-monitoringPeriod: "October 2018–May 2021"
+monitoringPeriod: "October 2018–present"
 monitoringSince: 2018-10-01
-operationalStatus: "unknown"
+operationalStatus: "operational"
 
 observationTypes:
   - "soundscape"
@@ -29,11 +29,14 @@ instrumentation:
 
 deploymentConfiguration: "Bottom-mounted autonomous recording"
 
+partners:
+  - "university-of-the-ryukyus"
+
 origin:
   survey: "sesoko-coral-reef-2017-2018"
   observationSite: "site-b"
 
-updated: 2026-09-27
+updated: 2026-09-29
 ---
 
-Long-term monitoring continued at this location after the initial three-site comparative survey. Observations from October 2018 to May 2021 captured seasonal biological choruses, vessel noise, and environmental sound associated with monsoon and typhoon conditions.
+Long-term monitoring continues at this location after the initial three-site comparative survey. The October 2018–May 2021 analysis presented by Lin et al. (2023) captured seasonal biological choruses, vessel noise, and environmental sound associated with monsoon and typhoon conditions.
