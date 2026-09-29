@@ -25,32 +25,32 @@ observationTypes:
 observationSites:
   - id: "dafu"
     name: "Dafu"
-    coordinates: { latitude: 22.329, longitude: 120.363 }
+    coordinates: { latitude: 22.33057, longitude: 120.37219 }
     coordinateStatus: "approximate"
     observedAt: 2022-08-14
   - id: "shanfu"
     name: "Shanfu"
-    coordinates: { latitude: 22.338, longitude: 120.355 }
+    coordinates: { latitude: 22.33836, longitude: 120.36069 }
     coordinateStatus: "approximate"
     observedAt: 2022-08-09
   - id: "longxiadong"
     name: "Longxiadong"
-    coordinates: { latitude: 22.351, longitude: 120.382 }
+    coordinates: { latitude: 22.34562, longitude: 120.38924 }
     coordinateStatus: "approximate"
     observedAt: 2022-08-11
   - id: "meirendong"
     name: "Meirendong"
-    coordinates: { latitude: 22.354, longitude: 120.349 }
+    coordinates: { latitude: 22.35341, longitude: 120.37151 }
     coordinateStatus: "approximate"
     observedAt: 2022-08-10
   - id: "huapingyan"
     name: "Huapingyan"
-    coordinates: { latitude: 22.326, longitude: 120.377 }
+    coordinates: { latitude: 22.3562, longitude: 120.3805 }
     coordinateStatus: "approximate"
     observedAt: 2022-08-12
   - id: "houshi"
     name: "Houshi"
-    coordinates: { latitude: 22.321, longitude: 120.367 }
+    coordinates: { latitude: 22.32484, longitude: 120.36624 }
     coordinateStatus: "approximate"
     observedAt: 2022-08-13
 
@@ -62,5 +62,5 @@ media:
   src: "assets/images/surveys/recruitment-xiaoliuqiu/Header.jpg"
   alt: "Tropical coral reef habitat at Xiaoliuqiu in southwestern Taiwan"
   caption: "Coral reef habitat surveyed around Xiaoliuqiu, southwestern Taiwan."
-updated: 2026-09-27
+updated: 2026-09-29
 ---
