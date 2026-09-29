@@ -8,17 +8,27 @@ const findings = await getCollection('findings', ({ data }) => data.status === '
 const stations = new Map((await getCollection('stations')).map((entry) => [entry.id, entry.data]));
 const surveys = new Map((await getCollection('surveys')).map((entry) => [entry.id, entry.data]));
 const publications = new Map((await getCollection('publications')).map((entry) => [entry.id, entry.data]));
+const findingsByYear = findings
+  .map((finding, index) => ({
+    finding,
+    index,
+    year: finding.data.publication ? publications.get(finding.data.publication.id)?.year : undefined,
+  }))
+  .sort((a, b) => {
+    if (a.year === undefined) return b.year === undefined ? a.index - b.index : 1;
+    if (b.year === undefined) return -1;
+    return b.year - a.year || a.index - b.index;
+  });
 const page = await getEntry('pages', 'research');
 if (!page || page.data.pageType !== 'research') throw new Error('Missing or invalid pages/research content entry.');
 ---
 <BaseLayout title={page.data.title} description={page.data.description}>
   <section class="page-hero page-hero--dark"><div class="shell"><p class="eyebrow">{page.data.eyebrow}</p><h1>{page.data.heroTitle}</h1><p class="lede">{page.data.heroText}</p></div></section>
-  <section class="evidence-section"><div class="shell"><div class="finding-list">{findings.map((finding) => {
+  <section class="evidence-section"><div class="shell"><div class="finding-list">{findingsByYear.map(({ finding, year }) => {
     const observations = [
       ...finding.data.stations.map(({ id }) => ({ title: stations.get(id)?.title ?? id, href: stationUrl(id) })),
       ...finding.data.surveys.map(({ id }) => ({ title: surveys.get(id)?.title ?? id, href: surveyUrl(id) })),
     ];
-    const year = finding.data.publication ? publications.get(finding.data.publication.id)?.year : undefined;
     return <FindingSummary finding={finding} year={year} observations={observations} />;
   })}</div></div></section>
 </BaseLayout>
