@@ -53,7 +53,9 @@ const records = [
     const extent = entry.data.mapExtent;
     const extentPolygon = extent ? [[extent.west, extent.south], [extent.east, extent.south], [extent.east, extent.north], [extent.west, extent.north], [extent.west, extent.south]] : null;
     const polygon = entry.data.polygon ? [...entry.data.polygon, entry.data.polygon[0]] : extentPolygon;
-    const observationSites = entry.data.observationSites.map((site) => ({ id: site.id, name: site.name, coordinates: [site.coordinates.longitude, site.coordinates.latitude], depthM: site.depthM, observedAt: site.observedAt?.toISOString() }));
+    const observationSites = entry.data.observationSites
+      .filter((site) => site.coordinates)
+      .map((site) => ({ id: site.id, name: site.name, coordinates: [site.coordinates!.longitude, site.coordinates!.latitude], depthM: site.depthM, observedAt: site.observedAt?.toISOString() }));
     const fallbackLocation = entry.data.polygon ? polygonCenter(entry.data.polygon)
       : extent ? [(extent.west + extent.east) / 2, (extent.south + extent.north) / 2] : null;
     const geometry = observationSites.length

@@ -84,11 +84,11 @@ const surveys = defineCollection({
       coordinates: z.object({
         latitude: z.number().min(-90).max(90),
         longitude: z.number().min(-180).max(180),
-      }),
+      }).optional(),
       depthM: z.number().nonnegative().optional(),
       observedAt: z.coerce.date().optional(),
       observationTypes: z.array(observationType).default(['soundscape']),
-      coordinateStatus: z.enum(['verified', 'approximate']).default('verified'),
+      coordinateStatus: z.enum(['verified', 'approximate']).optional(),
     })).default([]),
     ecosystem: z.string().optional(),
     habitat: z.array(z.string().min(1)).default([]),

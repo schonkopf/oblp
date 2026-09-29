@@ -48,8 +48,9 @@ const activityLabel = entry.data.recordType === 'spatial-survey' && entry.data.o
   ? 'Soundscape mapping'
   : formatTerm(entry.data.recordType);
 const observationSites = entry.data.observationSites;
+const georeferencedObservationSites = observationSites.filter((site) => site.coordinates).map((site) => ({ ...site, coordinates: site.coordinates! }));
 const stationContinuations = await deriveStationContinuations(entry, allStations);
-const extent = entry.data.mapExtent ?? deriveExtent(observationSites);
+const extent = entry.data.mapExtent ?? deriveExtent(georeferencedObservationSites);
 const isOngoing = entry.data.monitoringStatus === 'ongoing' && !entry.data.endDate;
 const showMonitoringSince = entry.data.monitoringSince && !entry.data.period && !entry.data.startDate;
 ---
