@@ -309,6 +309,7 @@ if (!page || page.data.pageType !== 'explore') throw new Error('Missing or inval
       const longitude = locations.reduce((sum, location) => sum + location.coordinates[0], 0) / locations.length;
       const stationRecords = new Set(locations.filter((location) => location.item.kind === 'station').map((location) => location.item.id));
       const surveyRecords = new Set(locations.filter((location) => location.item.kind === 'survey').map((location) => location.item.id));
+      const isColocated = locations.every((location) => coordinatesMatch(location.coordinates, locations[0].coordinates));
       const label = `${locations.length} observation locations in this area`;
       const size = Math.min(48, 34 + Math.log2(locations.length) * 4);
       const marker = L.marker([latitude, longitude], {
@@ -322,13 +323,16 @@ if (!page || page.data.pageType !== 'explore') throw new Error('Missing or inval
         }),
       });
       marker.bindTooltip(`<strong>${locations.length} observation locations</strong><br>${stationRecords.size} ${stationRecords.size === 1 ? 'station' : 'stations'} · ${surveyRecords.size} ${surveyRecords.size === 1 ? 'survey' : 'surveys'}`);
-      marker.on('click', () => {
-        const bounds = L.latLngBounds(locations.map((location) => [location.coordinates[1], location.coordinates[0]]));
-        if (bounds.getNorthEast().equals(bounds.getSouthWest())) map.setView(bounds.getCenter(), Math.min(map.getMaxZoom(), map.getZoom() + 2));
-        else map.fitBounds(bounds, { padding: [45, 45], maxZoom: 16 });
-      });
-      if (locations.every((location) => coordinatesMatch(location.coordinates, locations[0].coordinates))) {
+      if (isColocated) {
         marker.bindPopup(colocatedPopupContent(locations.map((location) => ({ item: location.item, site: location.site, label: location.kind === 'survey-site' ? 'Survey observation site' : location.item.recordLabel }))));
+      } else {
+        marker.on('click', () => {
+          const bounds = L.latLngBounds(locations.map((location) => [location.coordinates[1], location.coordinates[0]]));
+          const maximumClusterZoom = Math.min(map.getMaxZoom(), 16);
+          if (map.getZoom() >= maximumClusterZoom) return;
+          if (bounds.getNorthEast().equals(bounds.getSouthWest())) map.setView(bounds.getCenter(), Math.min(maximumClusterZoom, map.getZoom() + 2));
+          else map.fitBounds(bounds, { padding: [45, 45], maxZoom: 16 });
+        });
       }
       marker.addTo(layerGroup);
     }
