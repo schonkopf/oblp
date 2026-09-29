@@ -1,6 +1,6 @@
 ---
 title: "Using soundscapes to assess changes in coral reef social-ecological systems"
-summary: "Long-term observations off Sesoko Island demonstrate how coral reef soundscapes can reveal biological phenology, anthropogenic activity, and environmental disturbances."
+summary: "Long-term coral reef soundscape observations demonstrate how biological, environmental, and anthropogenic acoustic dynamics can provide complementary information for assessing coral reef social-ecological systems."
 status: "published"
 demo: false
 
@@ -22,5 +22,5 @@ citation: "Lin, T.-H., Sinniger, F., Harii, S., & Akamatsu, T. (2023). Using sou
 relatedStations:
   - "sesoko-20m"
 
-updated: 2026-09-27
+updated: 2026-09-29
 ---
