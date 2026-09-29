@@ -15,6 +15,10 @@ habitat:
 observationTypes:
   - "soundscape"
 
+depthRangeM:
+  min: 0
+  max: 1.5
+
 observationSites:
   - id: "by"
     name: "Baiyu — BY"
