@@ -73,7 +73,9 @@ const aboutText = entry.data.description;
       <dl class="station-vitals" aria-label="Key station facts">
         {entry.data.depthM !== undefined && <div><dt>Observation depth</dt><dd>{entry.data.depthM} m</dd></div>}
         {statusLabel && <div><dt>Monitoring status</dt><dd>{statusLabel}</dd></div>}
-        {entry.data.monitoringSince && <div><dt>Monitoring since</dt><dd>{formatDate(entry.data.monitoringSince)}</dd></div>}
+        {entry.data.operationalStatus === 'decommissioned' && entry.data.monitoringPeriod
+          ? <div><dt>Monitoring period</dt><dd>{entry.data.monitoringPeriod}</dd></div>
+          : entry.data.monitoringSince && <div><dt>Monitoring since</dt><dd>{formatDate(entry.data.monitoringSince)}</dd></div>}
       </dl>
     </div>
   </header>
@@ -96,7 +98,7 @@ const aboutText = entry.data.description;
         {entry.data.observationTypes.length > 0 && <div><dt>Observations</dt><dd>{entry.data.observationTypes.map(formatTerm).join(' · ')}</dd></div>}
         {entry.data.instrumentation.length > 0 && <div><dt>Instrumentation</dt><dd>{entry.data.instrumentation.join(' · ')}</dd></div>}
         {entry.data.deploymentConfiguration && <div><dt>Deployment</dt><dd>{entry.data.deploymentConfiguration}{entry.data.heightAboveSeafloorM !== undefined && ` · ${entry.data.heightAboveSeafloorM} m above seafloor`}</dd></div>}
-        {entry.data.monitoringPeriod && <div><dt>Monitoring period</dt><dd>{entry.data.monitoringPeriod}</dd></div>}
+        {entry.data.monitoringPeriod && entry.data.operationalStatus !== 'decommissioned' && <div><dt>Monitoring period</dt><dd>{entry.data.monitoringPeriod}</dd></div>}
         {entry.data.methods.length > 0 && <div><dt>Methods</dt><dd>{entry.data.methods.join(' · ')}</dd></div>}
       </dl>
     </div>
