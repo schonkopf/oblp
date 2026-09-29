@@ -181,21 +181,15 @@ if (!page || page.data.pageType !== 'explore') throw new Error('Missing or inval
       const HabitatControl = L.Control.extend({
         options: { position: 'topright' },
         onAdd() {
-          const container = L.DomUtil.create('fieldset', 'habitat-control leaflet-bar');
-          container.setAttribute('aria-label', 'Reef habitat layers');
-          const legend = L.DomUtil.create('legend', 'habitat-control__title', container);
-          legend.textContent = 'Reef habitat';
-          [['benthic', 'Benthic habitat']].forEach(([id, labelText]) => {
-            const label = L.DomUtil.create('label', 'habitat-control__option', container);
-            const checkbox = L.DomUtil.create('input', '', label);
-            checkbox.type = 'checkbox';
-            checkbox.dataset.habitat = id;
-            // Keep unavailable habitat controls visible but disabled.
-            checkbox.disabled = !habitatLayers[id];
-            const text = L.DomUtil.create('span', '', label);
-            text.textContent = labelText;
-            L.DomEvent.on(checkbox, 'change', () => toggleHabitat(id, checkbox.checked));
-          });
+          const container = L.DomUtil.create('div', 'habitat-control leaflet-bar');
+          const label = L.DomUtil.create('label', 'habitat-control__option', container);
+          const checkbox = L.DomUtil.create('input', '', label);
+          checkbox.type = 'checkbox';
+          checkbox.dataset.habitat = 'benthic';
+          checkbox.disabled = !habitatLayers.benthic;
+          const text = L.DomUtil.create('span', '', label);
+          text.textContent = 'Reef habitat';
+          L.DomEvent.on(checkbox, 'change', () => toggleHabitat('benthic', checkbox.checked));
           L.DomEvent.disableClickPropagation(container);
           L.DomEvent.disableScrollPropagation(container);
           return container;
