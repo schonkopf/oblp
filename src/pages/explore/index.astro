@@ -45,20 +45,24 @@ const stationPeriod = (data: CollectionEntry<'stations'>['data']) => data.monito
 const surveyPeriod = (data: CollectionEntry<'surveys'>['data']) => data.period
   ?? (data.startDate ? `${year(data.startDate)}${data.endDate ? `–${year(data.endDate)}` : ''}` : undefined);
 const records = [
-  ...stations.map((entry) => ({ id: entry.id, title: entry.data.title, summary: entry.data.summary, kind: 'station', recordType: entry.data.recordType, recordLabel: formatRecordType(entry.data.recordType), period: stationPeriod(entry.data), observations: entry.data.observationTypes, ecosystem: entry.data.ecosystem ?? entry.data.habitat ?? 'Not specified', region: regions.get(entry.data.region.id) ?? 'Not specified', url: stationUrl(entry.id), geometry: entry.data.coordinates ? { type: 'Point', coordinates: [entry.data.coordinates.longitude, entry.data.coordinates.latitude] } : null, clusterLocation: entry.data.coordinates ? [entry.data.coordinates.longitude, entry.data.coordinates.latitude] : null })),
+  ...stations.map((entry) => {
+    const coordinates = entry.data.coordinates ? [entry.data.coordinates.longitude, entry.data.coordinates.latitude] : null;
+    return { id: entry.id, title: entry.data.title, summary: entry.data.summary, kind: 'station', recordType: entry.data.recordType, recordLabel: formatRecordType(entry.data.recordType), period: stationPeriod(entry.data), observations: entry.data.observationTypes, ecosystem: entry.data.ecosystem ?? entry.data.habitat ?? 'Not specified', region: regions.get(entry.data.region.id) ?? 'Not specified', url: stationUrl(entry.id), geometry: coordinates ? { type: 'Point', coordinates } : null, mapLocations: coordinates ? [{ kind: 'station', coordinates }] : [] };
+  }),
   ...surveys.map((entry) => {
     const extent = entry.data.mapExtent;
     const extentPolygon = extent ? [[extent.west, extent.south], [extent.east, extent.south], [extent.east, extent.north], [extent.west, extent.north], [extent.west, extent.south]] : null;
     const polygon = entry.data.polygon ? [...entry.data.polygon, entry.data.polygon[0]] : extentPolygon;
-    const observationSites = entry.data.observationSites.map((site) => ({ id: site.id, name: site.name, coordinates: [site.coordinates.longitude, site.coordinates.latitude], observedAt: site.observedAt?.toISOString() }));
-    const clusterLocation = observationSites.length
-      ? [observationSites.reduce((sum, site) => sum + site.coordinates[0], 0) / observationSites.length, observationSites.reduce((sum, site) => sum + site.coordinates[1], 0) / observationSites.length]
-      : entry.data.polygon ? polygonCenter(entry.data.polygon)
+    const observationSites = entry.data.observationSites.map((site) => ({ id: site.id, name: site.name, coordinates: [site.coordinates.longitude, site.coordinates.latitude], depthM: site.depthM, observedAt: site.observedAt?.toISOString() }));
+    const fallbackLocation = entry.data.polygon ? polygonCenter(entry.data.polygon)
       : extent ? [(extent.west + extent.east) / 2, (extent.south + extent.north) / 2] : null;
     const geometry = observationSites.length
       ? { type: 'MultiPoint', coordinates: observationSites.map((site) => site.coordinates) }
       : polygon ? { type: 'Polygon', coordinates: [polygon] } : null;
-    return { id: entry.id, title: entry.data.title, summary: entry.data.summary, kind: 'survey', recordType: entry.data.recordType, recordLabel: formatRecordType(entry.data.recordType), period: surveyPeriod(entry.data), observations: entry.data.observationTypes, ecosystem: entry.data.ecosystem ?? 'Not specified', region: regions.get(entry.data.region.id) ?? 'Not specified', url: surveyUrl(entry.id), geometry, clusterLocation, observationSites };
+    const mapLocations = observationSites.length
+      ? observationSites.map((site) => ({ kind: 'survey-site', coordinates: site.coordinates, site }))
+      : fallbackLocation ? [{ kind: 'survey-fallback', coordinates: fallbackLocation }] : [];
+    return { id: entry.id, title: entry.data.title, summary: entry.data.summary, kind: 'survey', recordType: entry.data.recordType, recordLabel: formatRecordType(entry.data.recordType), period: surveyPeriod(entry.data), observations: entry.data.observationTypes, ecosystem: entry.data.ecosystem ?? 'Not specified', region: regions.get(entry.data.region.id) ?? 'Not specified', url: surveyUrl(entry.id), geometry, mapLocations };
   }),
 ];
 const ecosystems = [...new Set(records.map((item) => item.ecosystem))];
@@ -109,9 +113,10 @@ if (!page || page.data.pageType !== 'explore') throw new Error('Missing or inval
     let habitatLayers;
     let activeBasemap = 'map';
     let visibleRecords = records;
-    const closeZoom = 11;
+    const fallbackDetailZoom = 11;
     const clusterRadius = 72;
     const escapeHtml = (value) => String(value).replace(/[&<>'"]/g, (char) => ({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[char]));
+    const formatMapDate = (value) => new Intl.DateTimeFormat('en', { year: 'numeric', month: 'long', day: 'numeric', timeZone: 'UTC' }).format(new Date(value));
     function initMap() {
       if (!window.L) return;
       map = L.map('network-map', { scrollWheelZoom: true }).setView([43, -54], 3);
@@ -216,25 +221,23 @@ if (!page || page.data.pageType !== 'explore') throw new Error('Missing or inval
       return `<strong>${escapeHtml(item.title)}</strong><br><span>${escapeHtml(item.recordLabel)}</span><p>${escapeHtml(item.summary)}</p><a href="${escapeHtml(item.url)}">View ${escapeHtml(item.kind)} &rarr;</a>`;
     }
     function sitePopupContent(item, site) {
-      return `<strong>${escapeHtml(site.name)}</strong><br><span>Observation site within ${escapeHtml(item.title)}</span><p>${escapeHtml(item.recordLabel)}<br>${escapeHtml(item.region)}</p><a href="${escapeHtml(item.url)}">View survey &rarr;</a>`;
+      const details = [site.depthM !== undefined ? `${site.depthM} m` : '', site.observedAt ? formatMapDate(site.observedAt) : ''].filter(Boolean).map((detail) => escapeHtml(detail)).join('<br>');
+      return `<strong>${escapeHtml(site.name)}</strong><br><span>Observation site within ${escapeHtml(item.title)}</span>${details ? `<p>${details}</p>` : ''}<a href="${escapeHtml(item.url)}">View survey &rarr;</a>`;
+    }
+    function physicalLocations(items = visibleRecords) {
+      return items.flatMap((item) => item.mapLocations.map((location) => ({ ...location, item })));
+    }
+    function coordinatesMatch(left, right) {
+      return Math.abs(left[0] - right[0]) < 1e-6 && Math.abs(left[1] - right[1]) < 1e-6;
     }
     function observationsAt(coordinates) {
-      const [longitude, latitude] = coordinates;
-      const matches = [];
-      visibleRecords.forEach((item) => {
-        if (item.kind === 'station' && item.clusterLocation?.[0] === longitude && item.clusterLocation?.[1] === latitude) {
-          matches.push({ item, label: item.recordLabel });
-        }
-        item.observationSites?.forEach((site) => {
-          if (site.coordinates[0] === longitude && site.coordinates[1] === latitude) {
-            matches.push({ item, site, label: 'Survey observation site' });
-          }
-        });
-      });
-      return matches;
+      return physicalLocations().filter((location) => coordinatesMatch(location.coordinates, coordinates)).map((location) => ({ item: location.item, site: location.site, label: location.kind === 'survey-site' ? 'Survey observation site' : location.item.recordLabel }));
     }
     function colocatedPopupContent(matches) {
-      const records = matches.map(({ item, site, label }) => `<li>${item.period ? `<span>${escapeHtml(item.period)}</span><br>` : ''}<span>${escapeHtml(label)}${site ? ` · ${escapeHtml(site.name)}` : ''}</span><br><strong>${escapeHtml(item.title)}</strong><br><a href="${escapeHtml(item.url)}">View ${escapeHtml(item.kind)}: ${escapeHtml(item.title)} &rarr;</a></li>`).join('');
+      const records = matches.map(({ item, site, label }) => {
+        const siteDetails = site ? [site.depthM !== undefined ? `${site.depthM} m` : '', site.observedAt ? formatMapDate(site.observedAt) : ''].filter(Boolean).map(escapeHtml).join(' · ') : '';
+        return `<li>${item.period ? `<span>${escapeHtml(item.period)}</span><br>` : ''}<span>${escapeHtml(label)}${site ? ` · ${escapeHtml(site.name)}` : ''}</span>${siteDetails ? `<br><span>${siteDetails}</span>` : ''}<br><strong>${escapeHtml(item.title)}</strong><br><a href="${escapeHtml(item.url)}">View ${escapeHtml(item.kind)}: ${escapeHtml(item.title)} &rarr;</a></li>`;
+      }).join('');
       return `<strong>Observation history</strong><ul class="map-observation-history">${records}</ul>`;
     }
     function popupAt(coordinates, fallback) {
@@ -254,102 +257,94 @@ if (!page || page.data.pageType !== 'explore') throw new Error('Missing or inval
         if (element) element.setAttribute('aria-label', `${item.title}, ${item.recordLabel}`);
       });
     }
-    function observationLayer(item, compact = false) {
-      const [longitude, latitude] = item.clusterLocation;
-      if (item.kind === 'station') {
+    function observationLayer(location) {
+      const { item } = location;
+      const [longitude, latitude] = location.coordinates;
+      if (location.kind === 'station') {
         const marker = bindObservation(L.circleMarker([latitude, longitude], {
-          radius: compact ? 7 : 9,
+          radius: map.getZoom() < fallbackDetailZoom ? 7 : 9,
           color: 'var(--map-marker-halo)',
           weight: 3,
           fillColor: 'var(--map-station)',
           fillOpacity: 1,
         }), item);
-        marker.bindPopup(popupAt(item.clusterLocation, popupContent(item)));
+        marker.bindPopup(popupAt(location.coordinates, popupContent(item)));
         return marker;
       }
-      if (compact) {
+      if (location.kind === 'survey-site') {
+        const { site } = location;
+        return bindObservation(L.marker([latitude, longitude], {
+          keyboard: true,
+          title: `${site.name}, observation site within ${item.title}`,
+          icon: L.divIcon({ className: 'survey-observation-icon', html: '<span aria-hidden="true"></span>', iconSize: [18, 18], iconAnchor: [9, 9] }),
+        }), item).bindPopup(popupAt(site.coordinates, sitePopupContent(item, site))).bindTooltip(`${site.name} — ${item.title}`).on('add', (event) => event.target.getElement()?.setAttribute('aria-label', `${site.name}, observation site within ${item.title}`));
+      }
+      if (map.getZoom() < fallbackDetailZoom) {
         return bindObservation(L.marker([latitude, longitude], {
           title: `${item.title}, ${item.recordLabel}`,
           icon: L.divIcon({ className: 'survey-location-icon', html: '<span aria-hidden="true"></span>', iconSize: [22, 22], iconAnchor: [11, 11] }),
         }), item);
       }
-      if (item.observationSites?.length) {
-        return L.featureGroup(item.observationSites.map((site) => {
-          const [siteLongitude, siteLatitude] = site.coordinates;
-          const marker = L.marker([siteLatitude, siteLongitude], {
-            keyboard: true,
-            title: `${site.name}, observation site within ${item.title}`,
-            icon: L.divIcon({ className: 'survey-observation-icon', html: '<span aria-hidden="true"></span>', iconSize: [18, 18], iconAnchor: [9, 9] }),
-          });
-          marker.bindPopup(popupAt(site.coordinates, sitePopupContent(item, site)));
-          marker.bindTooltip(`${site.name} — ${item.title}`);
-          marker.on('add', () => marker.getElement()?.setAttribute('aria-label', `${site.name}, observation site within ${item.title}`));
-          return marker;
-        }));
-      }
       return bindObservation(L.geoJSON({ type: 'Feature', properties: item, geometry: item.geometry }, {
         style: { color: 'var(--map-survey-outline)', weight: 4, opacity: 1, fillColor: 'var(--map-survey-fill)', fillOpacity: .22 },
       }), item);
     }
-    function clusterVisible(items) {
-      const located = items.filter((item) => item.clusterLocation);
-      const parent = located.map((_, index) => index);
+    function clusterVisible(locations) {
+      const parent = locations.map((_, index) => index);
       const find = (index) => parent[index] === index ? index : (parent[index] = find(parent[index]));
       const unite = (left, right) => { const leftRoot = find(left); const rightRoot = find(right); if (leftRoot !== rightRoot) parent[rightRoot] = leftRoot; };
-      const points = located.map((item) => map.latLngToLayerPoint([item.clusterLocation[1], item.clusterLocation[0]]));
+      const points = locations.map((location) => map.latLngToLayerPoint([location.coordinates[1], location.coordinates[0]]));
       for (let left = 0; left < points.length; left += 1) {
         for (let right = left + 1; right < points.length; right += 1) {
           if (points[left].distanceTo(points[right]) <= clusterRadius) unite(left, right);
         }
       }
       const groups = new Map();
-      located.forEach((item, index) => {
+      locations.forEach((location, index) => {
         const root = find(index);
         if (!groups.has(root)) groups.set(root, []);
-        groups.get(root).push(item);
+        groups.get(root).push(location);
       });
       return [...groups.values()];
     }
-    function renderCluster(items) {
-      const latitude = items.reduce((sum, item) => sum + item.clusterLocation[1], 0) / items.length;
-      const longitude = items.reduce((sum, item) => sum + item.clusterLocation[0], 0) / items.length;
-      const stations = items.filter((item) => item.kind === 'station').length;
-      const surveys = items.length - stations;
-      const label = `${items.length} observation records in this area`;
-      const size = Math.min(48, 34 + Math.log2(items.length) * 4);
+    function renderCluster(locations) {
+      const latitude = locations.reduce((sum, location) => sum + location.coordinates[1], 0) / locations.length;
+      const longitude = locations.reduce((sum, location) => sum + location.coordinates[0], 0) / locations.length;
+      const stationRecords = new Set(locations.filter((location) => location.item.kind === 'station').map((location) => location.item.id));
+      const surveyRecords = new Set(locations.filter((location) => location.item.kind === 'survey').map((location) => location.item.id));
+      const label = `${locations.length} observation locations in this area`;
+      const size = Math.min(48, 34 + Math.log2(locations.length) * 4);
       const marker = L.marker([latitude, longitude], {
         title: label,
         keyboard: true,
         icon: L.divIcon({
           className: 'observation-cluster-icon',
-          html: `<span role="img" aria-label="${label}">${items.length}</span>`,
+          html: `<span role="img" aria-label="${label}">${locations.length}</span>`,
           iconSize: [size, size],
           iconAnchor: [size / 2, size / 2],
         }),
       });
-      marker.bindTooltip(`<strong>${items.length} observations</strong><br>${stations} ${stations === 1 ? 'station' : 'stations'} · ${surveys} ${surveys === 1 ? 'survey' : 'surveys'}`);
+      marker.bindTooltip(`<strong>${locations.length} observation locations</strong><br>${stationRecords.size} ${stationRecords.size === 1 ? 'station' : 'stations'} · ${surveyRecords.size} ${surveyRecords.size === 1 ? 'survey' : 'surveys'}`);
       marker.on('click', () => {
-        const bounds = L.latLngBounds(items.map((item) => [item.clusterLocation[1], item.clusterLocation[0]]));
-        if (bounds.getNorthEast().equals(bounds.getSouthWest())) map.setView(bounds.getCenter(), Math.min(closeZoom, map.getZoom() + 2));
-        else map.fitBounds(bounds, { padding: [45, 45], maxZoom: closeZoom });
+        const bounds = L.latLngBounds(locations.map((location) => [location.coordinates[1], location.coordinates[0]]));
+        if (bounds.getNorthEast().equals(bounds.getSouthWest())) map.setView(bounds.getCenter(), Math.min(map.getMaxZoom(), map.getZoom() + 2));
+        else map.fitBounds(bounds, { padding: [45, 45], maxZoom: 16 });
       });
+      if (locations.every((location) => coordinatesMatch(location.coordinates, locations[0].coordinates))) {
+        marker.bindPopup(colocatedPopupContent(locations.map((location) => ({ item: location.item, site: location.site, label: location.kind === 'survey-site' ? 'Survey observation site' : location.item.recordLabel }))));
+      }
       marker.addTo(layerGroup);
     }
     function renderObservationLayers() {
       if (!map) return;
       layerGroup.clearLayers();
-      const located = visibleRecords.filter((item) => item.clusterLocation && item.geometry);
-      if (map.getZoom() >= closeZoom) {
-        located.forEach((item) => observationLayer(item).addTo(layerGroup));
-        return;
-      }
-      clusterVisible(located).forEach((items) => {
-        if (items.length > 1) renderCluster(items);
-        else observationLayer(items[0], true).addTo(layerGroup);
+      clusterVisible(physicalLocations()).forEach((locations) => {
+        if (locations.length > 1) renderCluster(locations);
+        else observationLayer(locations[0]).addTo(layerGroup);
       });
     }
     function fitMapToVisibleRecords() {
-      const layers = visibleRecords.filter((item) => item.geometry && item.clusterLocation).map((item) => L.geoJSON({ type: 'Feature', properties: item, geometry: item.geometry }));
+      const layers = visibleRecords.filter((item) => item.geometry && item.mapLocations.length).map((item) => L.geoJSON({ type: 'Feature', properties: item, geometry: item.geometry }));
       if (!layers.length) return;
       const bounds = L.featureGroup(layers).getBounds();
       if (bounds.isValid()) map.fitBounds(bounds, { padding: [30, 30], maxZoom: 7 });

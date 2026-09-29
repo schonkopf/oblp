@@ -31,6 +31,7 @@ observationSites:
     coordinates:
       latitude: 39.284912
       longitude: 142.334918
+    depthM: 769
     observedAt: 2019-07-25
     coordinateStatus: "verified"
   - id: "sanriku-at2-17"
@@ -38,6 +39,7 @@ observationSites:
     coordinates:
       latitude: 39.287395
       longitude: 142.450525
+    depthM: 992
     observedAt: 2019-07-27
     coordinateStatus: "verified"
   - id: "sanriku-mt-08"
@@ -45,6 +47,7 @@ observationSites:
     coordinates:
       latitude: 39.318312
       longitude: 142.141188
+    depthM: 250
     observedAt: 2019-07-28
     coordinateStatus: "verified"
   - id: "sanriku-at2-18"
@@ -52,6 +55,7 @@ observationSites:
     coordinates:
       latitude: 39.299962
       longitude: 142.136820
+    depthM: 253
     observedAt: 2019-07-28
     coordinateStatus: "verified"
   - id: "sanriku-mt-09"
@@ -59,6 +63,7 @@ observationSites:
     coordinates:
       latitude: 39.084060
       longitude: 142.156295
+    depthM: 400
     observedAt: 2019-07-29
     coordinateStatus: "verified"
   - id: "sanriku-at2-19"
@@ -66,6 +71,7 @@ observationSites:
     coordinates:
       latitude: 39.067807
       longitude: 142.154037
+    depthM: 403
     observedAt: 2019-07-29
     coordinateStatus: "verified"
   - id: "sanriku-at2-20"
@@ -73,6 +79,7 @@ observationSites:
     coordinates:
       latitude: 39.067548
       longitude: 142.382607
+    depthM: 1011
     observedAt: 2019-08-01
     coordinateStatus: "verified"
   - id: "sanriku-at2-21"
@@ -80,6 +87,7 @@ observationSites:
     coordinates:
       latitude: 39.299812
       longitude: 142.170563
+    depthM: 326
     observedAt: 2019-08-03
     coordinateStatus: "verified"
   - id: "sanriku-mt-13"
@@ -87,6 +95,7 @@ observationSites:
     coordinates:
       latitude: 39.401758
       longitude: 142.276832
+    depthM: 518
     observedAt: 2019-08-05
     coordinateStatus: "verified"
   - id: "suruga-bay"
@@ -94,6 +103,7 @@ observationSites:
     coordinates:
       latitude: 34.973253
       longitude: 138.720148
+    depthM: 1686
     observedAt: 2019-11-04
     coordinateStatus: "verified"
   - id: "suiyo-diffuse-flow"
@@ -101,24 +111,28 @@ observationSites:
     coordinates:
       latitude: 28.571192
       longitude: 140.643693
+    depthM: 1384
     coordinateStatus: "verified"
   - id: "suiyo-caldera-rim"
     name: "Suiyo Seamount — caldera rim"
     coordinates:
       latitude: 28.569063
       longitude: 140.649402
+    depthM: 994
     coordinateStatus: "verified"
   - id: "suiyo-active-vent"
     name: "Suiyo Seamount — active vent"
     coordinates:
       latitude: 28.572147
       longitude: 140.642930
+    depthM: 1381
     coordinateStatus: "verified"
   - id: "minamitorishima-5500m"
     name: "Minamitorishima abyssal plain — comparative survey"
     coordinates:
       latitude: 23.083333
       longitude: 153.833333
+    depthM: 5500
     observedAt: 2020-03-14
     coordinateStatus: "verified"
 
