@@ -125,6 +125,14 @@ if (!page || page.data.pageType !== 'explore') throw new Error('Missing or inval
       map.getPane('basemapPane').style.zIndex = 200;
       map.createPane('habitatPane');
       map.getPane('habitatPane').style.zIndex = 300;
+      // Keep interaction priority independent of the order in which records render.
+      // Leaflet dispatches pointer events to the visually highest pane first.
+      map.createPane('surveyPane');
+      map.getPane('surveyPane').style.zIndex = 410;
+      map.createPane('stationPane');
+      map.getPane('stationPane').style.zIndex = 430;
+      map.createPane('clusterPane');
+      map.getPane('clusterPane').style.zIndex = 450;
       const osmLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
         maxZoom: 18,
         pane: 'basemapPane',
@@ -261,6 +269,7 @@ if (!page || page.data.pageType !== 'explore') throw new Error('Missing or inval
       const [longitude, latitude] = location.coordinates;
       if (location.kind === 'station') {
         const marker = bindObservation(L.circleMarker([latitude, longitude], {
+          pane: 'stationPane',
           radius: map.getZoom() < fallbackDetailZoom ? 7 : 9,
           color: 'var(--map-marker-halo)',
           weight: 3,
@@ -273,6 +282,7 @@ if (!page || page.data.pageType !== 'explore') throw new Error('Missing or inval
       if (location.kind === 'survey-site') {
         const { site } = location;
         return bindObservation(L.marker([latitude, longitude], {
+          pane: 'surveyPane',
           keyboard: true,
           title: `${site.name}, observation site within ${item.title}`,
           icon: L.divIcon({ className: 'survey-observation-icon', html: '<span aria-hidden="true"></span>', iconSize: [18, 18], iconAnchor: [9, 9] }),
@@ -280,11 +290,13 @@ if (!page || page.data.pageType !== 'explore') throw new Error('Missing or inval
       }
       if (map.getZoom() < fallbackDetailZoom) {
         return bindObservation(L.marker([latitude, longitude], {
+          pane: 'surveyPane',
           title: `${item.title}, ${item.recordLabel}`,
           icon: L.divIcon({ className: 'survey-location-icon', html: '<span aria-hidden="true"></span>', iconSize: [22, 22], iconAnchor: [11, 11] }),
         }), item);
       }
       return bindObservation(L.geoJSON({ type: 'Feature', properties: item, geometry: item.geometry }, {
+        pane: 'surveyPane',
         style: { color: 'var(--map-survey-outline)', weight: 4, opacity: 1, fillColor: 'var(--map-survey-fill)', fillOpacity: .22 },
       }), item);
     }
@@ -315,6 +327,7 @@ if (!page || page.data.pageType !== 'explore') throw new Error('Missing or inval
       const label = `${locations.length} observation locations in this area`;
       const size = Math.min(48, 34 + Math.log2(locations.length) * 4);
       const marker = L.marker([latitude, longitude], {
+        pane: 'clusterPane',
         title: label,
         keyboard: true,
         icon: L.divIcon({
