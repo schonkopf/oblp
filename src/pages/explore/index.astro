@@ -285,7 +285,7 @@ if (!page || page.data.pageType !== 'explore') throw new Error('Missing or inval
           pane: 'surveyPane',
           keyboard: true,
           title: `${site.name}, observation site within ${item.title}`,
-          icon: L.divIcon({ className: 'survey-observation-icon', html: '<span aria-hidden="true"></span>', iconSize: [18, 18], iconAnchor: [9, 9] }),
+          icon: L.divIcon({ className: 'survey-observation-icon', html: '<span class="survey-observation-icon__glyph" aria-hidden="true"></span>', iconSize: [18, 18], iconAnchor: [9, 9] }),
         }), item).bindPopup(popupAt(site.coordinates, sitePopupContent(item, site))).bindTooltip(`${site.name} — ${item.title}`).on('add', (event) => event.target.getElement()?.setAttribute('aria-label', `${site.name}, observation site within ${item.title}`));
       }
       if (map.getZoom() < fallbackDetailZoom) {
