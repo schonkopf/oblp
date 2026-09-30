@@ -26,6 +26,10 @@ instrumentation:
   - "SoundTrap acoustic recorder"
   - "HOBO Pendant temperature logger"
 deploymentConfiguration: "Seafloor-mounted autonomous acoustic recorder"
+
+origin:
+  survey: "kueishan-hydrothermal-environment-survey"
+  observationSite: "vn"
 ---
 
 At the turtle-head site, hydrothermal activity produces strong gradients in temperature and water chemistry and contributes geophysical signals to the local acoustic environment. Biological acoustic activity also occurs within this environmentally dynamic shallow-vent system, including higher-frequency sound associated with snapping shrimp.
