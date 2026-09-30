@@ -53,7 +53,6 @@ const points = observations
     return { ...observation, position, lane, lanePosition };
   });
 
-const firstUnspecifiedLane = points.findIndex(({ representativeDepth }) => representativeDepth === undefined);
 const currentYear = new Date(now).getUTCFullYear();
 const tickYears = [2000, 2005, 2010, 2015, 2020, 2025].filter((year) => year < currentYear);
 const ticks = [
@@ -83,7 +82,6 @@ const formatDate = new Intl.DateTimeFormat('en', { year: 'numeric', month: 'shor
       <div class="observation-history__time-axis" aria-hidden="true"></div>
       <div class="observation-history__depth-axis" aria-hidden="true"><span>Depth</span><b>↓</b></div>
       <div class="observation-history__lanes">
-        {firstUnspecifiedLane >= 0 && <div class="observation-history__unspecified-divider" style={`--lane-position: ${points[firstUnspecifiedLane].lanePosition}`} aria-hidden="true"><span>Depth not specified</span></div>}
         {points.map((point) => (
           <a
             class={`history-marker history-marker--${point.kind}`}
@@ -216,8 +214,6 @@ const formatDate = new Intl.DateTimeFormat('en', { year: 'numeric', month: 'shor
   .history-tooltip:not([hidden]) { display: grid; }
   .history-tooltip strong { color: var(--color-ink); font-family: var(--font-serif); font-size: .9rem; font-weight: 600; }
   .history-tooltip b { margin-top: .2rem; color: var(--color-teal-600); font-size: .68rem; }
-  .observation-history__unspecified-divider { position: absolute; top: calc(var(--lane-position) * (100% - 1.35rem) - .45rem); right: 0; left: 0; border-top: 1px solid var(--color-line); }
-  .observation-history__unspecified-divider span { position: absolute; top: -.85rem; left: 0; padding-right: .4rem; background: #fff; color: var(--color-muted); font-size: .55rem; letter-spacing: .08em; text-transform: uppercase; }
   @media (max-width: 760px) {
     .observation-history { padding-block: var(--space-5); }
     .observation-history__heading { align-items: flex-start; flex-direction: column; gap: .7rem; }
