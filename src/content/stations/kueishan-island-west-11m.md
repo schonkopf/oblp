@@ -26,6 +26,10 @@ instrumentation:
   - "SoundTrap acoustic recorder"
   - "HOBO Pendant temperature logger"
 deploymentConfiguration: "Seafloor-mounted autonomous acoustic recorder"
+
+origin:
+  survey: "kueishan-hydrothermal-environment-survey"
+  observationSite: "t"
 ---
 
 The turtle-tail site provides a reef-dominated acoustic environment in which reef-associated organisms contribute substantially to biological sound. Snapping shrimp are an important component of its higher-frequency soundscape, while the island's Kuroshio-influenced oceanography and northeastern Taiwan's seasonal conditions provide a variable environmental setting.
