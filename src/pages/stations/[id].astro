@@ -73,7 +73,7 @@ const aboutText = entry.data.description;
       <dl class="station-vitals" aria-label="Key station facts">
         {entry.data.depthM !== undefined && <div><dt>Observation depth</dt><dd>{entry.data.depthM} m</dd></div>}
         {statusLabel && <div><dt>Monitoring status</dt><dd>{statusLabel}</dd></div>}
-        {entry.data.operationalStatus === 'decommissioned' && entry.data.monitoringPeriod
+        {entry.data.monitoringPeriod
           ? <div><dt>Monitoring period</dt><dd>{entry.data.monitoringPeriod}</dd></div>
           : entry.data.monitoringSince && <div><dt>Monitoring since</dt><dd>{formatDate(entry.data.monitoringSince)}</dd></div>}
       </dl>
