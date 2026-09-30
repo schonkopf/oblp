@@ -7,6 +7,9 @@ demo: false
 
 recordType: "spatial-survey"
 region: "north-taiwan"
+period: "May-November 2018"
+startDate: 2018-05-17
+endDate: 2018-11-06
 
 ecosystem: "Algal reef"
 habitat:
