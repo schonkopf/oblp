@@ -89,6 +89,7 @@ if (!page || page.data.pageType !== 'explore') throw new Error('Missing or inval
     const noResults = explorer.querySelector('.no-results');
     let map;
     let mappingSurveyLayerGroup;
+    let mappingSurveyRenderer;
     let pointLayerGroup;
     let basemaps;
     let habitatLayers;
@@ -106,6 +107,7 @@ if (!page || page.data.pageType !== 'explore') throw new Error('Missing or inval
       // Leaflet dispatches pointer events to the visually highest pane first.
       map.createPane('mappingSurveyPane');
       map.getPane('mappingSurveyPane').style.zIndex = 350;
+      mappingSurveyRenderer = L.svg({ pane: 'mappingSurveyPane', padding: 0.5 });
       map.createPane('surveyPointPane');
       map.getPane('surveyPointPane').style.zIndex = 410;
       map.createPane('stationPane');
@@ -307,7 +309,7 @@ if (!page || page.data.pageType !== 'explore') throw new Error('Missing or inval
       }
     }
     function mappingSurveyLayer(item) {
-      const options = { pane: 'mappingSurveyPane', className: 'mapping-survey-area', color: 'var(--map-survey-outline)', weight: 2, opacity: .8, fillColor: 'var(--map-survey-fill)', fillOpacity: .15 };
+      const options = { pane: 'mappingSurveyPane', renderer: mappingSurveyRenderer, className: 'mapping-survey-area', color: 'var(--map-survey-outline)', weight: 2, opacity: .8, fillColor: 'var(--map-survey-fill)', fillOpacity: .15 };
       const layer = item.mapArea.kind === 'extent'
         ? L.rectangle([[item.mapArea.bounds.south, item.mapArea.bounds.west], [item.mapArea.bounds.north, item.mapArea.bounds.east]], options)
         : L.polygon(item.mapArea.coordinates.map(([longitude, latitude]) => [latitude, longitude]), options);
