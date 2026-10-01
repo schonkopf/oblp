@@ -93,9 +93,10 @@ if (!page || page.data.pageType !== 'explore') throw new Error('Missing or inval
     let layerGroup;
     let basemaps;
     let habitatLayers;
+    let stationRenderer;
+    let surveyAreaRenderer;
     let activeBasemap = 'map';
     let visibleRecords = records;
-    const clusterRadius = 72;
     const escapeHtml = (value) => String(value).replace(/[&<>'"]/g, (char) => ({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[char]));
     function initMap() {
       if (!window.L) return;
@@ -114,6 +115,11 @@ if (!page || page.data.pageType !== 'explore') throw new Error('Missing or inval
       map.getPane('stationPane').style.zIndex = 430;
       map.createPane('clusterPane');
       map.getPane('clusterPane').style.zIndex = 450;
+      // Path renderers own their SVG containers. Giving each vector type a
+      // renderer ensures the SVG itself, rather than only its paths, is in the
+      // pane that defines the map's visual and interaction hierarchy.
+      surveyAreaRenderer = L.svg({ pane: 'surveyAreaPane', padding: .5 });
+      stationRenderer = L.svg({ pane: 'stationPane', padding: .5 });
       const osmLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
         maxZoom: 18,
         pane: 'basemapPane',
@@ -243,6 +249,15 @@ if (!page || page.data.pageType !== 'explore') throw new Error('Missing or inval
       }).join('');
       return `<strong>Observation history</strong><ul class="map-observation-history">${records}</ul>`;
     }
+    function clusterPopupContent(locations) {
+      const entries = locations.map(({ item, site, kind }) => {
+        const type = kind === 'long-term-station'
+          ? 'Long-term station'
+          : `Short-term station${site ? ` · ${escapeHtml(site.name)}` : ''}`;
+        return `<li><span>${type}</span><br><strong>${escapeHtml(item.title)}</strong><br><a href="${escapeHtml(item.url)}">View ${escapeHtml(item.kind)} &rarr;</a></li>`;
+      }).join('');
+      return `<strong>Observation locations</strong><ul class="map-observation-history">${entries}</ul>`;
+    }
     function popupAt(coordinates, fallback) {
       const matches = observationsAt(coordinates);
       return matches.length > 1 ? colocatedPopupContent(matches) : fallback;
@@ -277,6 +292,7 @@ if (!page || page.data.pageType !== 'explore') throw new Error('Missing or inval
       if (location.kind === 'long-term-station') {
         const marker = bindObservation(L.circleMarker([latitude, longitude], {
           pane: 'stationPane',
+          renderer: stationRenderer,
           radius: 8,
           color: 'var(--map-marker-halo)',
           weight: 3,
@@ -302,6 +318,7 @@ if (!page || page.data.pageType !== 'explore') throw new Error('Missing or inval
     function mappingSurveyLayer(item) {
       const layer = L.geoJSON({ type: 'Feature', properties: item, geometry: item.mapArea }, {
         pane: 'surveyAreaPane',
+        renderer: surveyAreaRenderer,
         style: { className: 'mapping-survey-area', color: 'var(--map-survey-outline)', weight: 2, opacity: .8, fillColor: 'var(--map-survey-fill)', fillOpacity: .15 },
       });
       bindObservation(layer, item).bindTooltip(`${item.title} — ${item.recordLabel} · Mapping survey`);
@@ -309,14 +326,23 @@ if (!page || page.data.pageType !== 'explore') throw new Error('Missing or inval
       layer.on('mouseout', () => layer.setStyle({ weight: 2, fillOpacity: .15 }));
       return layer;
     }
-    function clusterVisible(locations) {
+    function clusterRadiusForZoom(zoom) {
+      if (zoom <= 7) return 72;
+      if (zoom <= 10) return 60;
+      if (zoom <= 13) return 44;
+      if (zoom <= 15) return 28;
+      if (zoom <= 17) return 18;
+      return 0;
+    }
+    function clusterLocations(locations, zoom, project) {
       const parent = locations.map((_, index) => index);
       const find = (index) => parent[index] === index ? index : (parent[index] = find(parent[index]));
       const unite = (left, right) => { const leftRoot = find(left); const rightRoot = find(right); if (leftRoot !== rightRoot) parent[rightRoot] = leftRoot; };
-      const points = locations.map((location) => map.latLngToLayerPoint([location.coordinates[1], location.coordinates[0]]));
+      const radius = clusterRadiusForZoom(zoom);
+      const points = locations.map((location) => project(location, zoom));
       for (let left = 0; left < points.length; left += 1) {
         for (let right = left + 1; right < points.length; right += 1) {
-          if (points[left].distanceTo(points[right]) <= clusterRadius) unite(left, right);
+          if (coordinatesMatch(locations[left].coordinates, locations[right].coordinates) || (radius > 0 && points[left].distanceTo(points[right]) <= radius)) unite(left, right);
         }
       }
       const groups = new Map();
@@ -327,12 +353,23 @@ if (!page || page.data.pageType !== 'explore') throw new Error('Missing or inval
       });
       return [...groups.values()];
     }
+    function clusterVisible(locations) {
+      return clusterLocations(locations, map.getZoom(), (location) => map.latLngToLayerPoint([location.coordinates[1], location.coordinates[0]]));
+    }
+    function nextSeparatingZoom(locations) {
+      const currentZoom = map.getZoom();
+      const maximumZoom = map.getMaxZoom();
+      for (let zoom = currentZoom + 1; zoom <= maximumZoom; zoom += 1) {
+        const groups = clusterLocations(locations, zoom, (location, candidateZoom) => map.project([location.coordinates[1], location.coordinates[0]], candidateZoom));
+        if (groups.length > 1) return zoom;
+      }
+      return null;
+    }
     function renderCluster(locations) {
       const latitude = locations.reduce((sum, location) => sum + location.coordinates[1], 0) / locations.length;
       const longitude = locations.reduce((sum, location) => sum + location.coordinates[0], 0) / locations.length;
       const stationRecords = new Set(locations.filter((location) => location.item.kind === 'station').map((location) => location.item.id));
       const surveyRecords = new Set(locations.filter((location) => location.item.kind === 'survey').map((location) => location.item.id));
-      const isColocated = locations.every((location) => coordinatesMatch(location.coordinates, locations[0].coordinates));
       const label = `${locations.length} observation locations in this area`;
       const size = Math.min(48, 34 + Math.log2(locations.length) * 4);
       const marker = L.marker([latitude, longitude], {
@@ -347,17 +384,15 @@ if (!page || page.data.pageType !== 'explore') throw new Error('Missing or inval
         }),
       });
       marker.bindTooltip(`<strong>${locations.length} observation locations</strong><br>${stationRecords.size} ${stationRecords.size === 1 ? 'station' : 'stations'} · ${surveyRecords.size} ${surveyRecords.size === 1 ? 'survey' : 'surveys'}`);
-      if (isColocated) {
-        marker.bindPopup(colocatedPopupContent(locations.map((location) => ({ item: location.item, site: location.site, label: location.site ? 'Survey observation site' : location.item.recordLabel }))));
-      } else {
-        marker.on('click', () => {
-          const bounds = L.latLngBounds(locations.map((location) => [location.coordinates[1], location.coordinates[0]]));
-          const maximumClusterZoom = Math.min(map.getMaxZoom(), 16);
-          if (map.getZoom() >= maximumClusterZoom) return;
-          if (bounds.getNorthEast().equals(bounds.getSouthWest())) map.setView(bounds.getCenter(), Math.min(maximumClusterZoom, map.getZoom() + 2));
-          else map.fitBounds(bounds, { padding: [45, 45], maxZoom: 16 });
-        });
-      }
+      marker.on('click', () => {
+        const separatingZoom = nextSeparatingZoom(locations);
+        if (separatingZoom === null) {
+          marker.bindPopup(clusterPopupContent(locations)).openPopup();
+          return;
+        }
+        const bounds = L.latLngBounds(locations.map((location) => [location.coordinates[1], location.coordinates[0]]));
+        map.setView(bounds.getCenter(), separatingZoom);
+      });
       marker.addTo(layerGroup);
     }
     function renderObservationLayers() {
