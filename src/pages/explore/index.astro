@@ -356,8 +356,6 @@ if (!page || page.data.pageType !== 'explore') throw new Error('Missing or inval
     function renderCluster(locations) {
       const latitude = locations.reduce((sum, location) => sum + location.coordinates[1], 0) / locations.length;
       const longitude = locations.reduce((sum, location) => sum + location.coordinates[0], 0) / locations.length;
-      const stationRecords = new Set(locations.filter((location) => location.item.kind === 'station').map((location) => location.item.id));
-      const surveyRecords = new Set(locations.filter((location) => location.item.kind === 'survey').map((location) => location.item.id));
       const label = `${locations.length} observation locations in this area`;
       const size = Math.min(48, 34 + Math.log2(locations.length) * 4);
       const marker = L.marker([latitude, longitude], {
@@ -371,7 +369,7 @@ if (!page || page.data.pageType !== 'explore') throw new Error('Missing or inval
           iconAnchor: [size / 2, size / 2],
         }),
       });
-      marker.bindTooltip(`<strong>${locations.length} observation locations</strong><br>${stationRecords.size} ${stationRecords.size === 1 ? 'station' : 'stations'} · ${surveyRecords.size} ${surveyRecords.size === 1 ? 'survey' : 'surveys'}`);
+      marker.bindTooltip(`<strong>${locations.length} observation locations</strong>`);
       marker.on('click', () => {
         const separatingZoom = nextSeparatingZoom(locations);
         if (separatingZoom === null) {
