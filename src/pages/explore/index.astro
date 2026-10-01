@@ -30,21 +30,19 @@ const records = [
   ...stations.map((entry) => {
     const coordinates = entry.data.coordinates ? [entry.data.coordinates.longitude, entry.data.coordinates.latitude] : null;
     const pointKind = entry.data.recordType === 'short-term-station' ? 'short-term-station' : 'long-term-station';
-    return { id: entry.id, title: entry.data.title, summary: entry.data.summary, kind: 'station', recordType: entry.data.recordType, recordLabel: formatRecordType(entry.data.recordType), period: stationPeriod(entry.data), observations: entry.data.observationTypes, ecosystem: entry.data.ecosystem ?? entry.data.habitat ?? 'Not specified', region: regions.get(entry.data.region.id) ?? 'Not specified', url: stationUrl(entry.id), geometry: coordinates ? { type: 'Point', coordinates } : null, mapPoints: coordinates ? [{ kind: pointKind, coordinates }] : [], mapArea: null };
+    return { id: entry.id, title: entry.data.title, summary: entry.data.summary, kind: 'station', recordType: entry.data.recordType, recordLabel: formatRecordType(entry.data.recordType), period: stationPeriod(entry.data), observations: entry.data.observationTypes, ecosystem: entry.data.ecosystem ?? entry.data.habitat ?? 'Not specified', region: regions.get(entry.data.region.id) ?? 'Not specified', url: stationUrl(entry.id), mapPoints: coordinates ? [{ kind: pointKind, coordinates }] : [], mapArea: null };
   }),
   ...surveys.map((entry) => {
-    const extent = entry.data.mapExtent;
-    const extentPolygon = extent ? [[extent.west, extent.south], [extent.east, extent.south], [extent.east, extent.north], [extent.west, extent.north], [extent.west, extent.south]] : null;
-    const polygon = entry.data.polygon ? [...entry.data.polygon, entry.data.polygon[0]] : extentPolygon;
     const observationSites = entry.data.observationSites
       .filter((site) => site.coordinates)
       .map((site) => ({ id: site.id, name: site.name, coordinates: [site.coordinates!.longitude, site.coordinates!.latitude], depthM: site.depthM, observedAt: site.observedAt?.toISOString() }));
-    const geometry = observationSites.length
-      ? { type: 'MultiPoint', coordinates: observationSites.map((site) => site.coordinates) }
-      : polygon ? { type: 'Polygon', coordinates: [polygon] } : null;
     const mapPoints = observationSites.map((site) => ({ kind: 'short-term-station', coordinates: site.coordinates, site }));
-    const mapArea = observationSites.length === 0 && polygon ? { type: 'Polygon', coordinates: [polygon] } : null;
-    return { id: entry.id, title: entry.data.title, summary: entry.data.summary, kind: 'survey', recordType: entry.data.recordType, recordLabel: formatRecordType(entry.data.recordType), period: surveyPeriod(entry.data), observations: entry.data.observationTypes, ecosystem: entry.data.ecosystem ?? 'Not specified', region: regions.get(entry.data.region.id) ?? 'Not specified', url: surveyUrl(entry.id), geometry, mapPoints, mapArea };
+    const mapArea = entry.data.polygon
+      ? { kind: 'polygon', coordinates: entry.data.polygon }
+      : entry.data.mapExtent
+        ? { kind: 'extent', bounds: entry.data.mapExtent }
+        : null;
+    return { id: entry.id, title: entry.data.title, summary: entry.data.summary, kind: 'survey', recordType: entry.data.recordType, recordLabel: formatRecordType(entry.data.recordType), period: surveyPeriod(entry.data), observations: entry.data.observationTypes, ecosystem: entry.data.ecosystem ?? 'Not specified', region: regions.get(entry.data.region.id) ?? 'Not specified', url: surveyUrl(entry.id), mapPoints, mapArea };
   }),
 ];
 const ecosystems = [...new Set(records.map((item) => item.ecosystem))];
@@ -90,11 +88,10 @@ if (!page || page.data.pageType !== 'explore') throw new Error('Missing or inval
     const status = explorer.querySelector('.results-status');
     const noResults = explorer.querySelector('.no-results');
     let map;
-    let layerGroup;
+    let mappingSurveyLayerGroup;
+    let pointLayerGroup;
     let basemaps;
     let habitatLayers;
-    let stationRenderer;
-    let surveyAreaRenderer;
     let activeBasemap = 'map';
     let visibleRecords = records;
     const escapeHtml = (value) => String(value).replace(/[&<>'"]/g, (char) => ({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[char]));
@@ -107,19 +104,14 @@ if (!page || page.data.pageType !== 'explore') throw new Error('Missing or inval
       map.getPane('habitatPane').style.zIndex = 300;
       // Keep interaction priority independent of the order in which records render.
       // Leaflet dispatches pointer events to the visually highest pane first.
-      map.createPane('surveyAreaPane');
-      map.getPane('surveyAreaPane').style.zIndex = 360;
+      map.createPane('mappingSurveyPane');
+      map.getPane('mappingSurveyPane').style.zIndex = 350;
       map.createPane('surveyPointPane');
       map.getPane('surveyPointPane').style.zIndex = 410;
       map.createPane('stationPane');
       map.getPane('stationPane').style.zIndex = 430;
       map.createPane('clusterPane');
       map.getPane('clusterPane').style.zIndex = 450;
-      // Path renderers own their SVG containers. Giving each vector type a
-      // renderer ensures the SVG itself, rather than only its paths, is in the
-      // pane that defines the map's visual and interaction hierarchy.
-      surveyAreaRenderer = L.svg({ pane: 'surveyAreaPane', padding: .5 });
-      stationRenderer = L.svg({ pane: 'stationPane', padding: .5 });
       const osmLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
         maxZoom: 18,
         pane: 'basemapPane',
@@ -152,8 +144,9 @@ if (!page || page.data.pageType !== 'explore') throw new Error('Missing or inval
       };
       addHabitatControl();
       addMapLegend();
-      layerGroup = L.featureGroup().addTo(map);
-      map.on('zoomend', renderObservationLayers);
+      mappingSurveyLayerGroup = L.featureGroup().addTo(map);
+      pointLayerGroup = L.featureGroup().addTo(map);
+      map.on('zoomend', renderPointObservationLayers);
       updateFilters();
       fitMapToVisibleRecords();
     }
@@ -290,16 +283,14 @@ if (!page || page.data.pageType !== 'explore') throw new Error('Missing or inval
       const { item } = location;
       const [longitude, latitude] = location.coordinates;
       if (location.kind === 'long-term-station') {
-        const marker = bindObservation(L.circleMarker([latitude, longitude], {
+        const title = `${item.title}, ${item.recordLabel}`;
+        const marker = bindObservation(L.marker([latitude, longitude], {
           pane: 'stationPane',
-          renderer: stationRenderer,
-          radius: 8,
-          color: 'var(--map-marker-halo)',
-          weight: 3,
-          fillColor: 'var(--map-station)',
-          fillOpacity: 1,
+          keyboard: true,
+          title,
+          icon: L.divIcon({ className: 'long-term-station-icon', html: '<span class="long-term-station-icon__glyph" aria-hidden="true"></span>', iconSize: [18, 18], iconAnchor: [9, 9] }),
         }), item);
-        marker.bindPopup(popupAt(location.coordinates, popupContent(item)));
+        marker.bindPopup(popupAt(location.coordinates, popupContent(item))).on('add', (event) => event.target.getElement()?.setAttribute('aria-label', title));
         return marker;
       }
       if (location.kind === 'short-term-station') {
@@ -316,12 +307,11 @@ if (!page || page.data.pageType !== 'explore') throw new Error('Missing or inval
       }
     }
     function mappingSurveyLayer(item) {
-      const layer = L.geoJSON({ type: 'Feature', properties: item, geometry: item.mapArea }, {
-        pane: 'surveyAreaPane',
-        renderer: surveyAreaRenderer,
-        style: { className: 'mapping-survey-area', color: 'var(--map-survey-outline)', weight: 2, opacity: .8, fillColor: 'var(--map-survey-fill)', fillOpacity: .15 },
-      });
-      bindObservation(layer, item).bindTooltip(`${item.title} — ${item.recordLabel} · Mapping survey`);
+      const options = { pane: 'mappingSurveyPane', className: 'mapping-survey-area', color: 'var(--map-survey-outline)', weight: 2, opacity: .8, fillColor: 'var(--map-survey-fill)', fillOpacity: .15 };
+      const layer = item.mapArea.kind === 'extent'
+        ? L.rectangle([[item.mapArea.bounds.south, item.mapArea.bounds.west], [item.mapArea.bounds.north, item.mapArea.bounds.east]], options)
+        : L.polygon(item.mapArea.coordinates.map(([longitude, latitude]) => [latitude, longitude]), options);
+      bindObservation(layer, item).bindTooltip(`${item.title} — Spatial survey`);
       layer.on('mouseover', () => layer.setStyle({ weight: 3, fillOpacity: .22 }));
       layer.on('mouseout', () => layer.setStyle({ weight: 2, fillOpacity: .15 }));
       return layer;
@@ -393,21 +383,33 @@ if (!page || page.data.pageType !== 'explore') throw new Error('Missing or inval
         const bounds = L.latLngBounds(locations.map((location) => [location.coordinates[1], location.coordinates[0]]));
         map.setView(bounds.getCenter(), separatingZoom);
       });
-      marker.addTo(layerGroup);
+      marker.addTo(pointLayerGroup);
     }
-    function renderObservationLayers() {
+    function renderMappingSurveyLayers() {
       if (!map) return;
-      layerGroup.clearLayers();
-      visibleRecords.filter((item) => item.mapArea).forEach((item) => mappingSurveyLayer(item).addTo(layerGroup));
+      mappingSurveyLayerGroup.clearLayers();
+      visibleRecords.filter((item) => item.mapArea).forEach((item) => mappingSurveyLayer(item).addTo(mappingSurveyLayerGroup));
+    }
+    function renderPointObservationLayers() {
+      if (!map) return;
+      pointLayerGroup.clearLayers();
       clusterVisible(physicalLocations()).forEach((locations) => {
         if (locations.length > 1) renderCluster(locations);
-        else observationLayer(locations[0]).addTo(layerGroup);
+        else observationLayer(locations[0]).addTo(pointLayerGroup);
       });
     }
     function fitMapToVisibleRecords() {
-      const layers = visibleRecords.filter((item) => item.geometry).map((item) => L.geoJSON({ type: 'Feature', properties: item, geometry: item.geometry }));
-      if (!layers.length) return;
-      const bounds = L.featureGroup(layers).getBounds();
+      const bounds = L.latLngBounds();
+      visibleRecords.forEach((item) => {
+        item.mapPoints.forEach(({ coordinates: [longitude, latitude] }) => bounds.extend([latitude, longitude]));
+        if (item.mapArea?.kind === 'extent') {
+          const { west, east, south, north } = item.mapArea.bounds;
+          bounds.extend([[south, west], [north, east]]);
+        }
+        if (item.mapArea?.kind === 'polygon') {
+          item.mapArea.coordinates.forEach(([longitude, latitude]) => bounds.extend([latitude, longitude]));
+        }
+      });
       if (bounds.isValid()) map.fitBounds(bounds, { padding: [30, 30], maxZoom: 7 });
     }
     function updateFilters({ fitMap = false } = {}) {
@@ -420,7 +422,8 @@ if (!page || page.data.pageType !== 'explore') throw new Error('Missing or inval
       status.textContent = `Showing ${visibleRecords.length} of ${records.length} records`;
       noResults.hidden = visibleRecords.length !== 0;
       if (!map) return;
-      renderObservationLayers();
+      renderMappingSurveyLayers();
+      renderPointObservationLayers();
       if (fitMap) fitMapToVisibleRecords();
     }
     explorer.querySelector('.explore-controls').addEventListener('input', () => updateFilters({ fitMap: true }));
