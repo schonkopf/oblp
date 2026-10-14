@@ -1,7 +1,7 @@
 ---
 title: "Shigeo Reef Soundscape Mapping"
 summary: "An ongoing spatial acoustic survey near Motobu, Okinawa, investigating underwater soundscape variability across shallow-to-mesophotic subtropical reef environments."
-description: "Shigeo Reef lies off the Motobu Peninsula in northern Okinawa, Japan. University of the Ryukyus research has documented depth-dependent coral communities in the surrounding Sesoko–Motobu region, providing ecological context for acoustic investigations across shallow and mesophotic reef environments."
+description: "Shigeo Reef lies off the Motobu Peninsula in northern Okinawa, where shallow subtropical reefs and mesophotic coral habitats provide a setting for investigating depth-dependent soundscape variation. Spatial acoustic mapping has been conducted since September 2023 to examine how underwater soundscapes vary across reef habitats and depth gradients."
 status: published
 demo: false
 recordType: spatial-survey

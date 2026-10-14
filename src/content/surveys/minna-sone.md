@@ -1,7 +1,7 @@
 ---
 title: "Minna Sone Soundscape Mapping"
 summary: "An ongoing spatial acoustic survey of Minna Sone's offshore submerged reef and pinnacle system, investigating soundscape variability across complex seafloor topography west of Sesoko Island, Okinawa."
-description: "Minna Sone is an offshore submerged reef and pinnacle system west of Sesoko Island and the Motobu Peninsula in northern Okinawa, Japan. Ecological research describes shallow reef summits and slopes extending into deeper mesophotic environments, providing context for acoustic investigations of this seamount-like reef system."
+description: "Minna Sone is an offshore submerged reef and pinnacle system west of Sesoko Island, Okinawa, with shallow reef summits and slopes extending into mesophotic environments. Spatial acoustic mapping has been conducted since September 2023 to investigate underwater soundscape variability across this complex offshore topography."
 status: published
 demo: false
 recordType: spatial-survey
