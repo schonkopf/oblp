@@ -1,7 +1,7 @@
 ---
 title: "Sesoko Island Soundscape Mapping"
 summary: "An ongoing spatial acoustic survey of the fringing reefs around Sesoko Island, Okinawa, exploring reef soundscape variability within a well-studied subtropical coral reef environment."
-description: "Sesoko Island lies off the Motobu Peninsula in northern Okinawa, Japan, and is surrounded by subtropical fringing reefs. The University of the Ryukyus' Sesoko Station, part of its Tropical Biosphere Research Center, has supported decades of research into coral reef ecology, reproduction, physiology, and environmental variability."
+description: "Sesoko Island lies off the Motobu Peninsula in northern Okinawa and is surrounded by subtropical fringing reefs within a long-established coral reef research area. Spatial acoustic mapping has been conducted since September 2023 to investigate how biological, physical, and human sounds vary across coastal reef habitats."
 status: published
 demo: false
 recordType: spatial-survey
